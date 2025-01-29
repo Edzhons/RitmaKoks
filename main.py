@@ -2,8 +2,6 @@ from metodes import *
 
 galvenais = Tk()
 
-def aizvertProgrammu():
-    galvenais.destroy()
 #GALVENAIS WINDOW
 
 notebook = ttk.Notebook(galvenais)
@@ -19,7 +17,7 @@ style = ttk.Style()
 style.layout("TNotebook.Tab", [])
 
 galvenais.attributes("-fullscreen", True)
-width = galvenais.winfo_screenwidth() 
+width = galvenais.winfo_screenwidth()
 height = galvenais.winfo_screenheight()
 
 galvenais.geometry("%dx%d" % (width, height))
@@ -40,6 +38,8 @@ virsraksts = Label(zimejumi,
 virsraksts.pack()
 
 #BILDES
+Img_BtnFullscreen = PhotoImage(file=resource_path("images/BtnFullscreen.png")).subsample(4,4)
+
 plaukstasImg = PhotoImage(file=resource_path("images/plaukstas.png"))
 plaukstasx2Img = PhotoImage(file=resource_path("images/plaukstasx2.png"))
 kajasImg = PhotoImage(file=resource_path("images/kajas.png"))
@@ -82,11 +82,25 @@ pogaEnter = Button(zimejumi,
 pogaEnter.place(relx=0.65,rely=0.01,relwidth=0.072, relheight=0.128)
 pogaEnter["state"] = "disabled"
 
+pogaMinimize = Button(galvenais, text="-",
+                      font=('Arial',50,'bold'),fg='blue',bg='#00FF00',
+                      activebackground="#00FF00",
+                      activeforeground="blue",
+                      relief=RAISED,bd=10, command=lambda: galvenais.iconify())
+pogaMinimize.place(relx=0.86,rely=0.01,relwidth=0.035,relheight=0.062)
+
+pogaToggleFs = Button(galvenais, image=Img_BtnFullscreen,
+                      fg='blue',bg='#00FF00',
+                      activebackground="#00FF00",
+                      activeforeground="blue",
+                      relief=RAISED,bd=10, command=lambda: toggleFullscreen(galvenais))
+pogaToggleFs.place(relx=0.91,rely=0.01,relwidth=0.035,relheight=0.062)
+
 pogaAizvert = Button(galvenais, text="X",
                       font=('Arial',20,'bold'),fg='blue',bg='#00FF00',
                       activebackground="#00FF00",
                       activeforeground="blue",
-                      relief=RAISED,bd=10, command=lambda: aizvertProgrammu())
+                      relief=RAISED,bd=10, command=lambda: aizvertProgrammu(galvenais))
 pogaAizvert.place(relx=0.96,rely=0.01,relwidth=0.035,relheight=0.062)
 
 #simboli

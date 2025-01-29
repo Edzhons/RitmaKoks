@@ -147,6 +147,7 @@ def Enter(frame, zimejumi, pogaEnter, pogaEnter2):
         pogaEnter2["state"] = "disabled"
 
 def mainitFrame(index, notebook, btn_zimejumi, btn_instrumenti):
+
     notebook.select(index)
 
     if index == 0:  # Zimejumu frame
@@ -155,3 +156,17 @@ def mainitFrame(index, notebook, btn_zimejumi, btn_instrumenti):
     else:  # Instrumentu frame
         btn_zimejumi.config(bg="#00FF00", relief="raised")
         btn_instrumenti.config(bg="yellow", relief="sunken")
+
+def aizvertProgrammu(galvenais):
+    galvenais.destroy()
+
+isFullscreen = True
+def toggleFullscreen(galvenais):
+    global isFullscreen
+    
+    if isFullscreen:
+        galvenais.attributes("-fullscreen", False)
+        isFullscreen = False
+    else:
+        galvenais.attributes("-fullscreen", True)
+        isFullscreen = True
