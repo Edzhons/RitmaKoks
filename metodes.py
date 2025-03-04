@@ -43,10 +43,12 @@ def irLodzinsKoordinates(container, relx, rely):
             return True  # Widget exists
     return False
 
-def PievienoBildi(frame,bilde, zimejumi, pauzeImg, pauze2Img, pogaEnter, pogaEnter2):
+def PievienoBildi(frame, bilde, zesti, pauzeImg, pauze2Img, pogaEnter, pogaEnter2, pogaNodzest):
     global horiz, vert, skaits, maxSkaits,  horiz2, vert2, skaits2, maxSkaits2
-    if frame == zimejumi:
+    if frame == zesti:
         if skaits < maxSkaits:
+            pogaNodzest["state"] = "active"
+
             plaukstas = Label(frame,image=bilde,bg="#222222",relief=RIDGE,bd=1)
             plaukstas.place(relx=horiz,rely=vert,relwidth=0.119, relheight=0.212)
             if not irLodzinsKoordinates(frame, horiz, vert+0.22) and not bilde == pauzeImg:
@@ -76,10 +78,10 @@ def PievienoBildi(frame,bilde, zimejumi, pauzeImg, pauze2Img, pogaEnter, pogaEnt
             if skaits2 == 1:
                 pogaEnter2["state"] = "active"
 
-def ResetBildes(frame, zimejumi, virsraksts, pogaEnter, pogaEnter2, virsraksts2):
+def ResetBildes(frame, zesti, virsraksts, pogaEnter, pogaEnter2, virsraksts2):
     global horiz, vert, skaits, maxSkaits,  horiz2, vert2, skaits2, maxSkaits2
 
-    if frame == zimejumi:
+    if frame == zesti:
         horiz = 0.03
         vert = 0.15
         skaits = 0
@@ -102,10 +104,10 @@ def ResetBildes(frame, zimejumi, virsraksts, pogaEnter, pogaEnter2, virsraksts2)
 
         pogaEnter2["state"] = "disabled"
 
-def Reset(frame, zimejumi, virsraksts, virsraksts2, pogaEnter, pogaEnter2):
+def Reset(frame, zesti, virsraksts, virsraksts2, pogaEnter, pogaEnter2):
     global horiz, vert, skaits, maxSkaits,  horiz2, vert2, skaits2, maxSkaits2
 
-    if frame == zimejumi:
+    if frame == zesti:
         horiz = 0.03
         vert = 0.15
         skaits = 0
@@ -132,10 +134,10 @@ def Reset(frame, zimejumi, virsraksts, virsraksts2, pogaEnter, pogaEnter2):
 
         pogaEnter2["state"] = "disabled"
 
-def Enter(frame, zimejumi, pogaEnter, pogaEnter2):
+def Enter(frame, zesti, pogaEnter, pogaEnter2):
     global horiz, vert, maxSkaits,  horiz2, vert2, maxSkaits2
     
-    if frame == zimejumi:
+    if frame == zesti:
         horiz = 0.03
         vert = 0.45
         maxSkaits = skaits*2
@@ -146,15 +148,41 @@ def Enter(frame, zimejumi, pogaEnter, pogaEnter2):
         maxSkaits2 = skaits2*2
         pogaEnter2["state"] = "disabled"
 
-def mainitFrame(index, notebook, btn_zimejumi, btn_instrumenti):
+def Nodzest(frame, zesti):
+    global skaits, horiz, vert, skaits2, horiz2, vert2
+    
+    if frame == zesti:
+
+        if vert == 0.45 and horiz == 0.03 and skaits < maxSkaits:
+            vert = 0.15
+            horiz = 0.856
+        elif skaits >= maxSkaits:
+            horiz = 0.856
+        else:
+            horiz -= 0.118
+
+        for widget in frame.winfo_children():
+            place_info = widget.place_info()
+            if (
+                place_info.get("relx") == str(horiz) and 
+                place_info.get("rely") == str(vert)
+            ):
+                widget.destroy()
+                break
+        
+        skaits -= 1
+    else:
+        skaits2 -= 1
+
+def mainitFrame(index, notebook, btn_zesti, btn_instrumenti):
 
     notebook.select(index)
 
     if index == 0:  # Zimejumu frame
-        btn_zimejumi.config(bg="yellow", relief="sunken")
+        btn_zesti.config(bg="yellow", relief="sunken")
         btn_instrumenti.config(bg="#00FF00", relief="raised")
     else:  # Instrumentu frame
-        btn_zimejumi.config(bg="#00FF00", relief="raised")
+        btn_zesti.config(bg="#00FF00", relief="raised")
         btn_instrumenti.config(bg="yellow", relief="sunken")
 
 def aizvertProgrammu(galvenais):
