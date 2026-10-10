@@ -5,9 +5,9 @@ RitmaKoks is a web-based music education platform for creating rhythm exercises 
 ## Project structure
 
 - `backend/` — Laravel REST API
-- `frontend/` — Vue 3 single-page application
+- `frontend/` — Vue 3 single-page application with Bootstrap 5 and custom responsive styles
 
-The initial database design is documented in [backend/database/README.md](./backend/database/README.md). Application features are intentionally deferred to later roadmap steps.
+The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The frontend provides a responsive, theme-aware application shell; rhythm and melody editing, authentication, and the full library are planned for later roadmap steps.
 
 ## Requirements
 
@@ -38,6 +38,8 @@ npm run dev
 ```
 
 Open the local URL printed by Vite to view the frontend.
+
+The UI foundation includes a responsive navigation shell, a persistent light/dark theme switch, and starter pages. The rhythm and melody editor cards are intentionally marked as upcoming work.
 
 ## Database
 
