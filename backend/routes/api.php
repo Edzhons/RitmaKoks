@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\MelodyCompositionController;
+use App\Http\Controllers\Api\RhythmAudioController;
 use App\Http\Controllers\Api\RhythmExerciseController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +24,15 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 
     Route::get('/categories', [CategoryController::class, 'index']);
+    Route::post('/rhythm-exercises/{composition}/audio', [RhythmAudioController::class, 'store'])
+        ->whereNumber('composition')
+        ->name('api.rhythm-exercises.audio.store');
+    Route::get('/rhythm-exercises/{composition}/audio', [RhythmAudioController::class, 'show'])
+        ->whereNumber('composition')
+        ->name('api.rhythm-exercises.audio.show');
+    Route::delete('/rhythm-exercises/{composition}/audio', [RhythmAudioController::class, 'destroy'])
+        ->whereNumber('composition')
+        ->name('api.rhythm-exercises.audio.destroy');
 
     foreach ([
         'rhythm-exercises' => RhythmExerciseController::class,

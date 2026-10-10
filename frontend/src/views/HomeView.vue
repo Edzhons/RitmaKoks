@@ -16,8 +16,8 @@ import StudioCard from '../components/StudioCard.vue'
           RitmaKoka galveno sadaļu.
         </p>
         <div class="hero-actions">
-          <RouterLink class="btn btn-primary" to="/rhythm-studio">
-            Atvērt ritma studiju
+          <RouterLink class="btn btn-primary" to="/sound-gestures">
+            Atvērt skanošos žestus
             <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
           </RouterLink>
           <RouterLink class="hero-secondary" to="/library">
@@ -51,8 +51,7 @@ import StudioCard from '../components/StudioCard.vue'
           <h2 id="studios-title">Ritms ir sākums</h2>
         </div>
         <p>
-          Ritma studija ir galvenā vieta mūzikas mācību satura apguvei. Tai līdzās augs arī citi
-          radoši rīki.
+          Skanošie žesti ir galvenā vieta ritma apguvei — klausies dziesmu un seko līdzi žestiem.
         </p>
       </div>
 
@@ -60,27 +59,35 @@ import StudioCard from '../components/StudioCard.vue'
         <StudioCard
           id="ritma-studija"
           icon="bi-music-note-list"
-          title="Ritma studija"
-          description="Apgūsti ritmu, veido vingrinājumus un nostiprini mūzikas stundās apgūto. Šī ir RitmaKoka galvenā mācību sadaļa."
+          title="Skanošie žesti"
+          description="Atskaņo dziesmu, atzīmē plaukšķus, kājiņas un pirkstu knipšus, lai skolēni varētu sekot ritmam."
           status="RitmaKoka galvenā sadaļa"
-          action="Atvērt ritma studiju"
-          to="/rhythm-studio"
+          action="Atvērt skanošos žestus"
+          to="/sound-gestures"
           tone="featured"
           featured
         />
         <StudioCard
           icon="bi-soundwave"
-          title="Melodiju studija"
-          description="Sakārto notis un pauzes, lai izveidotu savu melodiju."
+          title="Krāsainās notis"
+          description="Veido melodijas no dažāda ilguma un krāsas notīm."
           status="Plānota 7. solī"
           action="Tiek plānota"
           tone="amber"
         />
         <StudioCard
+          icon="bi-triangle"
+          title="Mūzikas instrumenti"
+          description="Pievieno dziesmām kociņus, trijstūri un citus klasē pieejamos instrumentus."
+          status="Plānota 8. solī"
+          action="Tiek plānota"
+          tone="green"
+        />
+        <StudioCard
           icon="bi-collection"
           title="Mūzikas bibliotēka"
           description="Atrodi idejas, saglabā sev noderīgo un dalies ar saviem darbiem."
-          status="Plānota 8. solī"
+          status="Plānota 9. solī"
           action="Apskatīt bibliotēku"
           to="/library"
         />

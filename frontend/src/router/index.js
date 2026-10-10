@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import AboutView from '../views/AboutView.vue'
 import { useAuthStore } from '../stores/auth'
+import SoundGesturesView from '../views/SoundGesturesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,9 +42,13 @@ const router = createRouter({
       component: () => import('../views/LibraryView.vue'),
     },
     {
+      path: '/sound-gestures',
+      name: 'sound-gestures',
+      component: SoundGesturesView,
+    },
+    {
       path: '/rhythm-studio',
-      name: 'rhythm-studio',
-      component: () => import('../views/RhythmStudioView.vue'),
+      redirect: { name: 'sound-gestures' },
     },
     {
       path: '/about',

@@ -58,12 +58,12 @@ async function signOut() {
                 Sākums
               </RouterLink>
               <RouterLink
-                class="nav-link"
-                to="/rhythm-studio"
+                class="nav-link studio-nav-link"
+                to="/sound-gestures"
                 active-class="active"
                 @click="menuOpen = false"
               >
-                Ritma studija
+                Skanošie žesti
               </RouterLink>
               <RouterLink
                 class="nav-link"
@@ -99,10 +99,10 @@ async function signOut() {
               </button>
               <RouterLink
                 class="btn btn-primary nav-cta"
-                to="/rhythm-studio"
+                to="/sound-gestures"
                 @click="menuOpen = false"
               >
-                Atvērt studiju
+                Atvērt žestus
               </RouterLink>
               <section class="account-panel" aria-label="Lietotāja konts">
                 <template v-if="auth.isAuthenticated">

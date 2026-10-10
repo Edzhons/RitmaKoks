@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\RhythmExercise;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,9 @@ class CompositionResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'content' => $this->content,
+            'audio_url' => $this->resource instanceof RhythmExercise && $this->audio_path
+                ? route('api.rhythm-exercises.audio.show', $this->id)
+                : null,
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($category): array => [
                 'id' => $category->id,
                 'name' => $category->name,

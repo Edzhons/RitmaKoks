@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { apiRequest, ApiError, prepareCsrfCookie } from './api'
+import { apiRequest, ApiError, prepareCsrfCookie, resolveApiUrl } from './api'
 
 describe('API service', () => {
   afterEach(() => {
@@ -59,6 +59,32 @@ describe('API service', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }))
 
     await expect(prepareCsrfCookie()).resolves.toBeUndefined()
+  })
+
+  it('sends uploaded files as multipart form data without overriding the content type', async () => {
+    document.cookie = 'XSRF-TOKEN=csrf-token'
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ data: { audio_url: '/api/rhythm-exercises/1/audio' } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    const form = new FormData()
+    form.append('audio', new File(['audio'], 'song.mp3', { type: 'audio/mpeg' }))
+
+    await apiRequest('/api/rhythm-exercises/1/audio', { method: 'POST', body: form })
+
+    const [, options] = fetch.mock.calls[0]
+    expect(options.body).toBe(form)
+    expect(options.credentials).toBe('include')
+    expect(options.headers['X-XSRF-TOKEN']).toBe('csrf-token')
+    expect(options.headers['Content-Type']).toBeUndefined()
+  })
+
+  it('resolves a protected audio API URL against the configured API origin', () => {
+    expect(resolveApiUrl('/api/rhythm-exercises/1/audio')).toBe(
+      'http://localhost:8000/api/rhythm-exercises/1/audio',
+    )
   })
 
   it('raises a clear API error when the CSRF endpoint fails', async () => {

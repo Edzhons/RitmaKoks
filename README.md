@@ -1,13 +1,13 @@
 # RitmaKoks
 
-RitmaKoks is a Latvian-language music education platform for schools, teachers, and students. Its central learning area is the rhythm studio, supported by tools for creating rhythm exercises and musical compositions.
+RitmaKoks is a Latvian-language music education platform for schools, teachers, and students. Its main learning activity is Skanošie žesti: students follow a song and perform the corresponding gestures in time.
 
 ## Project structure
 
 - `backend/` — Laravel REST API
 - `frontend/` — Vue 3 single-page application with Bootstrap 5 and custom responsive styles
 
-The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The frontend provides a responsive Latvian-language, theme-aware application shell and a rhythm studio for composing, playing, presenting, and saving exercises. The melody editor and full library remain planned for later roadmap steps.
+The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The responsive, theme-aware frontend includes Skanošie žesti, where a teacher can upload a song, record gesture cues while it plays, and present the timed gestures to students. Krāsainās notis and the instrument activity are separate planned areas.
 
 ## Development roadmap
 
@@ -18,14 +18,15 @@ We complete and verify one milestone before moving to the next. Each finished mi
 - [x] **03 — UI foundation:** responsive Latvian application shell, rhythm-first landing page, navigation, shared layout, and light/dark themes.
 - [x] **04 — Authentication and permissions:** Sanctum cookie-based sessions, registration/login/logout/password reset, regular/admin authorization, and a separate account area in the header.
 - [x] **05 — Reusable CRUD foundation:** authenticated rhythm and melody composition API conventions, request validation, owner authorization, category filtering, search, pagination, asynchronous frontend CRUD state, and soft-delete/restore workflows.
-- [x] **06 — RitmaKoks editor:** rhythm symbols and syllables, beats, measures, time signatures, tempo, playback, presentation mode, and saving personal exercises.
-- [ ] **07 — Krāsainās notis:** melody editor, note durations and rests, playback, and saved compositions.
-- [ ] **08 — Library:** personal and public works, search and filters, categories, publishing, previews, and independent attributed copies.
-- [ ] **09 — Admin panel:** user management, moderation, category/icon management, deleted-work restoration, and activity logs.
-- [ ] **10 — Testing and security:** broader backend/frontend coverage, permissions, validation, upload restrictions, accessibility, and bug fixes.
-- [ ] **11 — Deployment and documentation:** repeatable deployment to the planned Hetzner EU VPS using Ubuntu LTS, Nginx, PHP-FPM, static Vue assets, and private MySQL; Cloudflare DNS/proxy, auto-renewed HTTPS, secrets management, backups and restore, monitoring, secure SSH/firewall, migrations, and rollback documentation. No infrastructure or paid services are to be introduced during development.
+- [x] **06 — Skanošie žesti:** private song uploads, timed clap/foot/snap cues, synchronized highlighting, personal exercise saving, and presentation mode.
+- [ ] **07 — Krāsainās notis:** separate melody composer with note durations, rests, color choices, playback, and saved compositions.
+- [ ] **08 — Mūzikas instrumenti:** a separate song-following activity with timed cues for classroom instruments such as sticks and triangle.
+- [ ] **09 — Library:** personal and public works, search and filters, categories, publishing, previews, and independent attributed copies.
+- [ ] **10 — Admin panel:** user management, moderation, category/icon management, deleted-work restoration, and activity logs.
+- [ ] **11 — Testing and security:** broader backend/frontend coverage, permissions, validation, upload restrictions, accessibility, and bug fixes.
+- [ ] **12 — Deployment and documentation:** repeatable deployment to the planned Hetzner EU VPS using Ubuntu LTS, Nginx, PHP-FPM, static Vue assets, and private MySQL; Cloudflare DNS/proxy, auto-renewed HTTPS, secrets management, backups and restore, monitoring, secure SSH/firewall, migrations, and rollback documentation. No infrastructure or paid services are to be introduced during development.
 
-**Next:** Step 07, the melody composer. Deployment remains the final milestone.
+**Next:** Step 07, Krāsainās notis. Deployment remains the final milestone.
 
 ## Requirements
 
@@ -57,9 +58,9 @@ npm run dev
 
 Open the local URL printed by Vite to view the frontend.
 
-The UI includes a responsive navigation shell, a persistent light/dark theme switch, and Latvian account registration, sign-in, sign-out, and password-reset pages. The rhythm studio is available at `/rhythm-studio`; the melody editor is the next planned milestone.
+The UI includes a responsive navigation shell, a persistent light/dark theme switch, and Latvian account registration, sign-in, sign-out, and password-reset pages. Skanošie žesti is available at `/sound-gestures` (`/rhythm-studio` redirects there); Krāsainās notis is the next planned milestone.
 
-Authenticated CRUD API and frontend conventions are documented in [backend/README.md](./backend/README.md). Rhythm exercises use the Step 05 API foundation; public sharing and the melody editor are still planned.
+Authenticated CRUD API and frontend conventions are documented in [backend/README.md](./backend/README.md). Gesture cues are stored as versioned JSON, while each private audio upload is stored outside the public web root and streamed only to its owner or an administrator.
 
 ## Authentication (local development)
 

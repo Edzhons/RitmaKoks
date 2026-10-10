@@ -21,8 +21,8 @@ import { RouterLink } from 'vue-router'
         Darbu meklēšana, kategorijas un skolotāju koplietoti skaņdarbi paredzēti 8. solī. Tikmēr
         iepazīsti galveno sadaļu — ritma studiju.
       </p>
-      <RouterLink class="btn btn-primary mt-4" to="/rhythm-studio">
-        Atvērt ritma studiju
+      <RouterLink class="btn btn-primary mt-4" to="/sound-gestures">
+        Atvērt skanošos žestus
         <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
       </RouterLink>
     </section>

@@ -8,14 +8,15 @@ import { useAuthStore } from './stores/auth'
 import AboutView from './views/AboutView.vue'
 import HomeView from './views/HomeView.vue'
 import LibraryView from './views/LibraryView.vue'
-import RhythmStudioView from './views/RhythmStudioView.vue'
+import SoundGesturesView from './views/SoundGesturesView.vue'
 
 function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'home', component: HomeView },
-      { path: '/rhythm-studio', name: 'rhythm-studio', component: RhythmStudioView },
+      { path: '/sound-gestures', name: 'sound-gestures', component: SoundGesturesView },
+      { path: '/rhythm-studio', redirect: { name: 'sound-gestures' } },
       { path: '/library', name: 'library', component: LibraryView },
       { path: '/about', name: 'about', component: AboutView },
     ],
@@ -49,7 +50,7 @@ describe('application shell', () => {
     document.documentElement.removeAttribute('data-bs-theme')
   })
 
-  it('shows the Latvian brand, accessible navigation, and rhythm-first dashboard', async () => {
+  it('shows the Latvian brand, accessible navigation, and the main sound-gesture section', async () => {
     const { wrapper } = await mountApp()
 
     expect(wrapper.get('.brand-name').text()).toBe('RitmaKoks')
@@ -59,11 +60,13 @@ describe('application shell', () => {
     expect(wrapper.get('.account-panel a[href="/register"]').text()).toBe('Reģistrēties')
     expect(wrapper.find('.site-nav-links a[href="/login"]').exists()).toBe(false)
     expect(wrapper.get('#hero-title').text()).toContain('Sāc ar ritmu.')
-    expect(wrapper.get('.studio-card--featured h3').text()).toBe('Ritma studija')
+    expect(wrapper.get('.studio-card--featured h3').text()).toBe('Skanošie žesti')
     expect(wrapper.get('.studio-card--featured .studio-status').text()).toBe(
       'RitmaKoka galvenā sadaļa',
     )
-    expect(wrapper.findAll('.studio-card')).toHaveLength(3)
+    expect(wrapper.get('.studio-nav-link').text()).toBe('Skanošie žesti')
+    expect(wrapper.findAll('.studio-card')).toHaveLength(4)
+    expect(wrapper.get('.studio-card:nth-child(2) h3').text()).toBe('Krāsainās notis')
   })
 
   it('shows the signed-in user name and logs out from the account section', async () => {
@@ -112,7 +115,7 @@ describe('application shell', () => {
     expect(wrapper.get('.nav-link.active').text()).toBe('Bibliotēka')
   })
 
-  it('opens the rhythm studio from its header action', async () => {
+  it('opens Skanošie žesti from its header action', async () => {
     const { wrapper, router } = await mountApp()
 
     await router.push('/library')
@@ -120,20 +123,21 @@ describe('application shell', () => {
     await wrapper.get('.nav-cta').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.fullPath).toBe('/rhythm-studio')
-    expect(wrapper.get('h1').text()).toBe('Veido savu ritmu.')
-    expect(wrapper.get('.nav-link.active').text()).toBe('Ritma studija')
+    expect(router.currentRoute.value.fullPath).toBe('/sound-gestures')
+    expect(wrapper.get('h1').text()).toBe('Skanošie žesti')
+    expect(wrapper.get('.nav-link.active').text()).toBe('Skanošie žesti')
   })
 
-  it('opens a working rhythm editor from the homepage studio card', async () => {
+  it('opens the song-and-gesture activity from the homepage studio card', async () => {
     const { wrapper, router } = await mountApp()
 
     await wrapper.get('.studio-card--featured .studio-card-action').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.name).toBe('rhythm-studio')
-    expect(wrapper.get('.rhythm-score-panel h2').text()).toBe('Tavs ritma pieraksts')
-    expect(wrapper.get('.sign-in-note').text()).toContain('Lai saglabātu vingrinājumus')
+    expect(router.currentRoute.value.name).toBe('sound-gestures')
+    expect(wrapper.get('#song-title').text()).toBe('Izvēlies dziesmu')
+    expect(wrapper.get('.gesture-button').element.disabled).toBe(true)
+    expect(wrapper.get('.sign-in-panel').text()).toContain('Lai saglabātu dziesmu un žestus')
   })
 
   it('collapses and expands the mobile navigation accessibly', async () => {

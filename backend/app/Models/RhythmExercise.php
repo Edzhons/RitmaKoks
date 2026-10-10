@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'description',
     'content',
     'published_at',
+    'audio_path',
 ])]
 class RhythmExercise extends Model
 {

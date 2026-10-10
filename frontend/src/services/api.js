@@ -15,12 +15,17 @@ export class ApiError extends Error {
   }
 }
 
+export function resolveApiUrl(path) {
+  return new URL(path, `${apiBaseUrl}/`).href
+}
+
 export async function apiRequest(path, { method = 'GET', body, query } = {}) {
   const headers = { Accept: 'application/json' }
   const token = xsrfToken()
   const url = new URL(path, `${apiBaseUrl}/`)
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
 
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (body !== undefined && !isFormData) headers['Content-Type'] = 'application/json'
   if (token) headers['X-XSRF-TOKEN'] = token
   if (query) {
     for (const [key, value] of Object.entries(query)) {
@@ -35,7 +40,7 @@ export async function apiRequest(path, { method = 'GET', body, query } = {}) {
     method,
     credentials: 'include',
     headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined || isFormData ? body : JSON.stringify(body),
   })
 
   if (response.status === 204) return null
