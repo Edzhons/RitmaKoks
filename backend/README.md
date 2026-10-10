@@ -1,58 +1,43 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# RitmaKoks backend API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The Laravel API uses JSON responses and Sanctum session cookies for the Vue SPA. Composition and category endpoints require an authenticated user. Set the frontend origin in the backend CORS and Sanctum configuration as described in the root README.
 
-## About Laravel
+## Composition resources
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Both resources follow the same API contract:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Operation | Rhythm exercises | Melody compositions |
+| --- | --- | --- |
+| List and search | `GET /api/rhythm-exercises` | `GET /api/melody-compositions` |
+| Create | `POST /api/rhythm-exercises` | `POST /api/melody-compositions` |
+| View | `GET /api/rhythm-exercises/{id}` | `GET /api/melody-compositions/{id}` |
+| Update | `PATCH /api/rhythm-exercises/{id}` | `PATCH /api/melody-compositions/{id}` |
+| Soft delete | `DELETE /api/rhythm-exercises/{id}` | `DELETE /api/melody-compositions/{id}` |
+| List deleted | `GET /api/rhythm-exercises/trashed` | `GET /api/melody-compositions/trashed` |
+| Restore | `POST /api/rhythm-exercises/{id}/restore` | `POST /api/melody-compositions/{id}/restore` |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+`GET /api/categories` returns categories available for composition forms.
 
-## Learning Laravel
+Create a composition with `title` and a JSON-object `content`; `description` and `category_ids` are optional. Update requests accept the same fields partially. Validation failures use HTTP 422 and Laravel's JSON `message`/`errors` shape, with user-facing messages in Latvian.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Clients may filter lists with `search`, `category_id`, `page`, and `per_page` (1–50; default 15). Ordering is controlled by `sort` (`created_at`, `updated_at`, or `title`) and `direction` (`asc` or `desc`). The list response has a stable shape:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```json
+{
+  "data": [],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 0,
+    "last_page": 1
+  },
+  "links": {
+    "next": null,
+    "previous": null
+  }
+}
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Regular users only see and manage their own works; administrators can access all compositions. New works are always assigned to the authenticated user. Clients cannot set ownership, publication status, deletion status, or source attribution. Publishing is reserved for the later library/moderation workflow. Deletion is soft, and each owner's deleted works are listed separately and can be restored.
 
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/api.js) sends credentialed requests and CSRF headers; [`../frontend/src/composables/useCrudResource.js`](../frontend/src/composables/useCrudResource.js) provides shared collection, pagination, pending, validation-error, save, delete, and restore state for the future editors/library. No editor UI is implemented in this milestone.

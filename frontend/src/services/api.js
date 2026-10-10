@@ -15,14 +15,23 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest(path, { method = 'GET', body } = {}) {
+export async function apiRequest(path, { method = 'GET', body, query } = {}) {
   const headers = { Accept: 'application/json' }
   const token = xsrfToken()
+  const url = new URL(path, `${apiBaseUrl}/`)
 
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers['X-XSRF-TOKEN'] = token
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined || value === null || value === '') continue
+      for (const item of Array.isArray(value) ? value : [value]) {
+        url.searchParams.append(key, String(item))
+      }
+    }
+  }
 
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(url, {
     method,
     credentials: 'include',
     headers,
