@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Policies\UserPolicy;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(User::class, UserPolicy::class);
+
+        ResetPassword::createUrlUsing(
+            fn (User $user, string $token): string => config('app.frontend_url')
+                .'/password/reset?token='.urlencode($token)
+                .'&email='.urlencode($user->getEmailForPasswordReset()),
+        );
     }
 }

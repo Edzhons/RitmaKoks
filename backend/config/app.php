@@ -78,11 +78,13 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'lv'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'lv'),
 
-    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
+    'faker_locale' => env('APP_FAKER_LOCALE', 'lv_LV'),
+
+    'frontend_url' => env('FRONTEND_URL', 'http://127.0.0.1:5173'),
 
     /*
     |--------------------------------------------------------------------------

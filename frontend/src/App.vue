@@ -1,10 +1,22 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useThemeStore } from './stores/theme'
+import { useAuthStore } from './stores/auth'
 
 const theme = useThemeStore()
+const auth = useAuthStore()
+const router = useRouter()
 const menuOpen = ref(false)
+
+async function signOut() {
+  try {
+    await auth.logout()
+    await router.push({ name: 'home' })
+  } catch (error) {
+    auth.error = error.message
+  }
+}
 </script>
 
 <template>
@@ -61,6 +73,27 @@ const menuOpen = ref(false)
               >
                 Par projektu
               </RouterLink>
+              <RouterLink
+                v-if="!auth.isAuthenticated"
+                class="nav-link"
+                to="/login"
+                active-class="active"
+                @click="menuOpen = false"
+              >
+                Pieteikties
+              </RouterLink>
+              <RouterLink
+                v-if="!auth.isAuthenticated"
+                class="nav-link"
+                to="/register"
+                active-class="active"
+                @click="menuOpen = false"
+              >
+                Reģistrēties
+              </RouterLink>
+              <button v-else class="nav-link nav-link-button" type="button" @click="signOut">
+                Izrakstīties
+              </button>
             </div>
 
             <div class="navbar-actions">
@@ -91,6 +124,9 @@ const menuOpen = ref(false)
     </header>
 
     <main id="main-content" class="site-main">
+      <div v-if="auth.error" class="container site-container pt-3" role="status">
+        <div class="alert alert-warning">{{ auth.error }}</div>
+      </div>
       <RouterView />
     </main>
 

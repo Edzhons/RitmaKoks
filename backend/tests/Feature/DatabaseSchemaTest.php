@@ -20,7 +20,7 @@ class DatabaseSchemaTest extends TestCase
 
         $this->assertSame(UserRole::User, $user->role);
 
-        $user->update(['role' => UserRole::Admin]);
+        $user->forceFill(['role' => UserRole::Admin])->save();
 
         $this->assertSame(UserRole::Admin, $user->refresh()->role);
     }
