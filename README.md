@@ -7,7 +7,7 @@ RitmaKoks is a web-based music education platform for creating rhythm exercises 
 - `backend/` — Laravel REST API
 - `frontend/` — Vue 3 single-page application
 
-The database schema and application features are intentionally deferred to later roadmap steps.
+The initial database design is documented in [backend/database/README.md](./backend/database/README.md). Application features are intentionally deferred to later roadmap steps.
 
 ## Requirements
 
@@ -38,6 +38,17 @@ npm run dev
 ```
 
 Open the local URL printed by Vite to view the frontend.
+
+## Database
+
+Create a local MySQL database named `ritmakoks` and configure `backend/.env` with your MySQL credentials. Then run migrations and seed the default category:
+
+```powershell
+cd backend
+php artisan migrate --seed
+```
+
+See [backend/database/README.md](./backend/database/README.md) for the schema diagram and local database commands.
 
 ## Run tests
 
