@@ -2,15 +2,23 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addGestureCue,
+  buildMeasureGrid,
   createEmptyGestureSequence,
   formatTime,
+  getActiveCueIndex,
   getActiveCueId,
+  getNextCueIndex,
   normalizeGestureSequence,
 } from './gestureSequence'
 
 describe('gesture sequence helpers', () => {
   it('creates and formats an empty gesture sequence', () => {
-    expect(createEmptyGestureSequence()).toEqual({ schemaVersion: 2, cues: [] })
+    expect(createEmptyGestureSequence()).toEqual({
+      schemaVersion: 2,
+      tempo: 100,
+      timeSignature: { numerator: 4, denominator: 4 },
+      cues: [],
+    })
     expect(formatTime(65.239)).toBe('01:05.23')
   })
 
@@ -46,12 +54,22 @@ describe('gesture sequence helpers', () => {
     })
 
     expect(sequence.cues).toHaveLength(2)
+    expect(sequence.tempo).toBe(100)
+    expect(sequence.timeSignature).toEqual({ numerator: 4, denominator: 4 })
     expect(() =>
       normalizeGestureSequence({
         schemaVersion: 2,
         cues: [{ id: 'invalid', at: -1, gesture: 'triangle' }],
       }),
     ).toThrow()
+    expect(() =>
+      normalizeGestureSequence({
+        schemaVersion: 2,
+        tempo: 300,
+        timeSignature: { numerator: 4, denominator: 4 },
+        cues: [],
+      }),
+    ).toThrow('temps nav derīgs')
   })
 
   it('converts saved note-grid sounds into matching gesture cues', () => {
@@ -68,7 +86,47 @@ describe('gesture sequence helpers', () => {
 
     expect(sequence).toEqual({
       schemaVersion: 2,
+      tempo: 120,
+      timeSignature: { numerator: 4, denominator: 4 },
       cues: [{ id: 'sound', at: 1, gesture: 'clap' }],
     })
+  })
+
+  it('builds measures and places timed cues in their corresponding beats', () => {
+    const grid = buildMeasureGrid(
+      [
+        { id: 'first-clap', at: 0.1, gesture: 'clap' },
+        { id: 'next-clap', at: 0.4, gesture: 'clap' },
+        { id: 'stomp', at: 1.25, gesture: 'stomp' },
+        { id: 'snap', at: 2.1, gesture: 'snap' },
+      ],
+      4,
+      120,
+      { numerator: 4, denominator: 4 },
+    )
+
+    expect(grid).toHaveLength(2)
+    expect(grid[0].beats.map((beat) => beat.number)).toEqual([1, 2, 3, 4])
+    expect(grid[0].beats[0].cues.map((cue) => cue.id)).toEqual(['first-clap', 'next-clap'])
+    expect(grid[0].beats[2].cues[0].id).toBe('stomp')
+    expect(grid[1].beats[0].cues[0].id).toBe('snap')
+    expect(
+      getActiveCueIndex(
+        grid.flatMap((measure) => measure.beats.flatMap((beat) => beat.cues)),
+        0.2,
+      ),
+    ).toBe(0)
+    expect(getNextCueIndex([{ at: 1 }, { at: 2 }, { at: 2.5 }], 2)).toBe(2)
+  })
+
+  it('respects the selected meter when placing cues into measures', () => {
+    const grid = buildMeasureGrid([{ id: 'next-measure', at: 3.1, gesture: 'snap' }], 5, 60, {
+      numerator: 3,
+      denominator: 4,
+    })
+
+    expect(grid).toHaveLength(2)
+    expect(grid[0].beats).toHaveLength(3)
+    expect(grid[1].beats[0].cues[0].id).toBe('next-measure')
   })
 })

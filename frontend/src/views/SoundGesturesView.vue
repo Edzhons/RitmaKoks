@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import GestureCueTimeline from '../components/GestureCueTimeline.vue'
 import { useCrudResource } from '../composables/useCrudResource'
@@ -7,16 +7,21 @@ import { apiRequest, resolveApiUrl } from '../services/api'
 import { useAuthStore } from '../stores/auth'
 import {
   addGestureCue,
+  buildMeasureGrid,
   createEmptyGestureSequence,
   formatTime,
+  getActiveCueIndex,
   getActiveCueId,
+  getNextCueIndex,
   GESTURES,
   MAX_SEQUENCE_SECONDS,
   normalizeGestureSequence,
+  TIME_SIGNATURE_DENOMINATORS,
 } from '../utils/gestureSequence'
 
 const MAX_AUDIO_SIZE = 50 * 1024 * 1024
 const ACCEPTED_AUDIO_EXTENSIONS = /\.(mp3|wav|ogg|m4a|webm)$/i
+const TIME_SIGNATURE_NUMERATORS = Array.from({ length: 11 }, (_, index) => index + 2)
 
 const auth = useAuthStore()
 const sequence = ref(createEmptyGestureSequence())
@@ -28,6 +33,7 @@ const audioSource = ref('')
 const audioObjectUrl = ref('')
 const audioElement = ref(null)
 const fileInput = ref(null)
+const presentationGridScroll = ref(null)
 const audioDuration = ref(0)
 const currentTime = ref(0)
 const isPlaying = ref(false)
@@ -43,11 +49,70 @@ const crud = useCrudResource('/api/rhythm-exercises')
 const savedExercises = crud.items
 const { saving, validationErrors } = crud
 const cues = computed(() => sequence.value.cues)
+const isRhythmSettingsValid = computed(
+  () =>
+    Number.isInteger(sequence.value.tempo) &&
+    sequence.value.tempo >= 30 &&
+    sequence.value.tempo <= 240 &&
+    Number.isInteger(sequence.value.timeSignature.numerator) &&
+    sequence.value.timeSignature.numerator >= 2 &&
+    sequence.value.timeSignature.numerator <= 12 &&
+    TIME_SIGNATURE_DENOMINATORS.includes(sequence.value.timeSignature.denominator),
+)
 const activeCue = computed(() => cues.value.find((cue) => cue.id === activeCueId.value) || null)
+const activePresentationCueIndex = computed(() => getActiveCueIndex(cues.value, currentTime.value))
+const nextPresentationCueIndex = computed(() => getNextCueIndex(cues.value, currentTime.value))
+const presentationMeasures = computed(() =>
+  isRhythmSettingsValid.value
+    ? buildMeasureGrid(
+        cues.value,
+        audioDuration.value,
+        sequence.value.tempo,
+        sequence.value.timeSignature,
+      )
+    : [],
+)
+const presentationCue = computed(() => {
+  if (!isPlaying.value && currentTime.value === 0 && activePresentationCueIndex.value >= 0) {
+    return cues.value[activePresentationCueIndex.value]
+  }
+
+  const nextCue = cues.value[nextPresentationCueIndex.value]
+  return nextCue || cues.value[activePresentationCueIndex.value] || null
+})
+const presentationCueIsNext = computed(
+  () =>
+    nextPresentationCueIndex.value >= 0 &&
+    (isPlaying.value || currentTime.value > 0 || activePresentationCueIndex.value < 0),
+)
 const currentGesture = computed(() =>
   GESTURES.find((gesture) => gesture.id === (activeCue.value?.gesture || selectedGesture.value)),
 )
 const hasAudio = computed(() => Boolean(audioSource.value))
+
+watch(
+  [activePresentationCueIndex, nextPresentationCueIndex, presentationMode],
+  async () => {
+    if (!presentationMode.value) return
+
+    const cueIndex =
+      nextPresentationCueIndex.value >= 0
+        ? nextPresentationCueIndex.value
+        : activePresentationCueIndex.value
+    if (cueIndex < 0) return
+
+    await nextTick()
+    const measure = presentationMeasures.value.find((item) =>
+      item.beats.some((beat) => beat.cues.some((cue) => cue.cueIndex === cueIndex)),
+    )
+    if (!measure || !presentationGridScroll.value) return
+
+    presentationGridScroll.value
+      .querySelector(`[data-measure="${measure.number - 1}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  },
+  { flush: 'post' },
+)
 
 watch(
   () => auth.isAuthenticated,
@@ -240,14 +305,20 @@ function toggleAudioPlayback() {
 }
 
 function startPresentation() {
-  if (!audioElement.value || cues.value.length === 0) return
+  if (!audioElement.value || cues.value.length === 0 || !isRhythmSettingsValid.value) return
 
   audioElement.value.pause()
+  restartPresentation()
+  isPlaying.value = false
+  presentationMode.value = true
+}
+
+function restartPresentation() {
+  if (!audioElement.value) return
+
   audioElement.value.currentTime = 0
   currentTime.value = 0
   activeCueId.value = getActiveCueId(cues.value, 0)
-  isPlaying.value = false
-  presentationMode.value = true
 }
 
 async function uploadSelectedAudio(exerciseId) {
@@ -454,6 +525,51 @@ onBeforeUnmount(() => {
             laika skalā.
           </p>
 
+          <div class="rhythm-settings" aria-label="Taktsmēra un tempa iestatījumi">
+            <label>
+              <span>Taktsmērs</span>
+              <span class="time-signature-inputs">
+                <select
+                  v-model.number="sequence.timeSignature.numerator"
+                  class="form-select"
+                  aria-label="Taktsmēra skaitītājs"
+                >
+                  <option v-for="value in TIME_SIGNATURE_NUMERATORS" :key="value" :value="value">
+                    {{ value }}
+                  </option>
+                </select>
+                <span aria-hidden="true">/</span>
+                <select
+                  v-model.number="sequence.timeSignature.denominator"
+                  class="form-select"
+                  aria-label="Taktsmēra saucējs"
+                >
+                  <option v-for="value in TIME_SIGNATURE_DENOMINATORS" :key="value" :value="value">
+                    {{ value }}
+                  </option>
+                </select>
+              </span>
+            </label>
+            <label>
+              <span>Temps (ceturtdaļas minūtē)</span>
+              <input
+                v-model.number="sequence.tempo"
+                class="form-control"
+                type="number"
+                min="30"
+                max="240"
+                step="1"
+                aria-label="Temps sitienos minūtē"
+              />
+            </label>
+            <p>
+              Šie iestatījumi nosaka prezentācijas taktis; dziesmas un žestu laiki netiek mainīti.
+            </p>
+            <p v-if="!isRhythmSettingsValid" class="rhythm-settings-error" role="alert">
+              Tempsi jābūt no 30 līdz 240. Pārbaudi arī taktsmēra iestatījumus.
+            </p>
+          </div>
+
           <div
             class="gesture-buttons"
             role="group"
@@ -612,14 +728,17 @@ onBeforeUnmount(() => {
               Sāc prezentāciju, lai dziesmai skanot uz ekrāna izceltu katru nākamo žestu. Atverot
               režīmu, dziesma sāksies no sākuma.
             </p>
-            <p v-if="!hasAudio || !cues.length" class="presentation-requirement">
+            <p v-if="!isRhythmSettingsValid" class="presentation-requirement">
+              Iestati derīgu tempu un taktsmēru, lai sāktu prezentāciju.
+            </p>
+            <p v-else-if="!hasAudio || !cues.length" class="presentation-requirement">
               Lai sāktu, pievieno dziesmu un vismaz vienu žestu.
             </p>
           </div>
           <button
             class="btn btn-primary presentation-launch-button"
             type="button"
-            :disabled="!hasAudio || cues.length === 0"
+            :disabled="!hasAudio || cues.length === 0 || !isRhythmSettingsValid"
             @click="startPresentation"
           >
             <i class="bi bi-easel" aria-hidden="true"></i>
@@ -641,8 +760,21 @@ onBeforeUnmount(() => {
         <div>
           <span class="step-label">SKANOŠIE ŽESTI</span>
           <h2 id="presentation-title">{{ title || 'Žestu vingrinājums' }}</h2>
+          <p class="presentation-meter">
+            {{ sequence.timeSignature.numerator }}/{{ sequence.timeSignature.denominator }} ·
+            {{ sequence.tempo }} sitieni/min
+          </p>
         </div>
         <div class="presentation-actions">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            aria-label="Atgriezties dziesmas sākumā"
+            @click="restartPresentation"
+          >
+            <i class="bi bi-skip-start-fill" aria-hidden="true"></i>
+            Sākums
+          </button>
           <button
             v-if="hasAudio"
             class="btn btn-primary"
@@ -663,17 +795,22 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="presentation-stage" aria-live="polite" aria-atomic="true">
-        <template v-if="activeCue">
-          <span class="presentation-time">{{ formatTime(activeCue.at) }}</span>
+        <template v-if="presentationCue">
+          <span class="presentation-next-label">
+            {{ presentationCueIsNext ? 'NĀKAMAIS ŽESTS' : 'PAŠREIZĒJAIS ŽESTS' }}
+          </span>
+          <span class="presentation-time">{{ formatTime(presentationCue.at) }}</span>
           <span
             class="presentation-emoji"
-            :class="`presentation-emoji-${currentGesture?.id}`"
+            :class="`presentation-emoji-${GESTURES.find((gesture) => gesture.id === presentationCue.gesture)?.id}`"
             aria-hidden="true"
           >
-            {{ currentGesture?.icon }}
+            {{ GESTURES.find((gesture) => gesture.id === presentationCue.gesture)?.icon }}
           </span>
-          <h3>{{ currentGesture?.label }}</h3>
-          <p>Izpildi šo žestu kopā ar dziesmu!</p>
+          <h3>{{ GESTURES.find((gesture) => gesture.id === presentationCue.gesture)?.label }}</h3>
+          <p v-if="presentationCueIsNext">Seko šim žestam — tas būs nākamais.</p>
+          <p v-else-if="nextPresentationCueIndex >= 0">Šis žests tiek izpildīts tagad.</p>
+          <p v-else>Šis ir pēdējais žests vingrinājumā.</p>
         </template>
         <template v-else>
           <span class="presentation-emoji presentation-emoji-ready" aria-hidden="true">♪</span>
@@ -681,22 +818,69 @@ onBeforeUnmount(() => {
           <p>Žesti tiks izcelti dziesmai skanot.</p>
         </template>
       </div>
-      <div class="presentation-footer">
-        <span
-          >{{ formatTime(currentTime) }} /
-          {{ audioDuration ? formatTime(audioDuration) : '—:—' }}</span
-        >
-        <div class="presentation-upcoming" aria-label="Nākamie žesti">
-          <span>Nākamie:</span>
+      <section
+        class="presentation-grid-panel"
+        aria-label="Žestu taktis un nākamais izpildāmais žests"
+      >
+        <div class="presentation-grid-heading">
+          <h3>Žestu taktis</h3>
           <span
-            v-for="cue in cues.filter((item) => item.at > currentTime).slice(0, 4)"
-            :key="cue.id"
-            :title="`${GESTURES.find((gesture) => gesture.id === cue.gesture)?.label} — ${formatTime(cue.at)}`"
+            >{{ formatTime(currentTime) }} /
+            {{ audioDuration ? formatTime(audioDuration) : '—:—' }}</span
           >
-            {{ GESTURES.find((gesture) => gesture.id === cue.gesture)?.icon }}
-          </span>
-          <span v-if="!cues.some((item) => item.at > currentTime)">—</span>
         </div>
+        <div ref="presentationGridScroll" class="presentation-grid-scroll">
+          <div
+            v-for="(measure, measureIndex) in presentationMeasures"
+            :key="measure.number"
+            class="presentation-measure"
+            :data-measure="measureIndex"
+          >
+            <strong class="presentation-measure-number">{{ measure.number }}</strong>
+            <div class="presentation-beats">
+              <div
+                v-for="beat in measure.beats"
+                :key="beat.number"
+                class="presentation-beat"
+                :class="{
+                  'presentation-beat-current':
+                    currentTime >= beat.startTime &&
+                    currentTime <
+                      beat.startTime +
+                        (60 / sequence.tempo) * (4 / sequence.timeSignature.denominator),
+                }"
+                :aria-label="`Takts ${measure.number}, sitiens ${beat.number}`"
+              >
+                <span class="presentation-beat-number">{{ beat.number }}</span>
+                <span v-if="!beat.cues.length" class="presentation-beat-empty">·</span>
+                <span
+                  v-for="cue in beat.cues"
+                  :key="cue.id"
+                  class="presentation-cue-cell"
+                  :class="{
+                    'presentation-cue-current': cue.cueIndex === activePresentationCueIndex,
+                    'presentation-cue-next': cue.cueIndex === nextPresentationCueIndex,
+                  }"
+                  :aria-label="`${cue.cueIndex === nextPresentationCueIndex ? 'Nākamais žests' : cue.cueIndex === activePresentationCueIndex ? 'Pašreizējais žests' : 'Žests'}, ${GESTURES.find((gesture) => gesture.id === cue.gesture)?.label}, ${formatTime(cue.at)}`"
+                  :title="`${GESTURES.find((gesture) => gesture.id === cue.gesture)?.label} · ${formatTime(cue.at)}`"
+                >
+                  <span
+                    v-if="cue.cueIndex === nextPresentationCueIndex"
+                    class="presentation-cue-badge"
+                  >
+                    NĀKAMAIS
+                  </span>
+                  <span class="presentation-cue-icon" aria-hidden="true">
+                    {{ GESTURES.find((gesture) => gesture.id === cue.gesture)?.icon }}
+                  </span>
+                  <span class="presentation-cue-time">{{ formatTime(cue.at) }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="presentation-footer">
         <button class="btn btn-outline-secondary" type="button" @click="presentationMode = false">
           Aizvērt (Esc)
         </button>
@@ -721,7 +905,7 @@ onBeforeUnmount(() => {
 .presentation-header,
 .presentation-actions,
 .presentation-footer,
-.presentation-upcoming {
+.presentation-grid-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -953,6 +1137,57 @@ onBeforeUnmount(() => {
   margin: -0.35rem 0 1rem;
   color: var(--rk-muted);
   font-size: 0.82rem;
+}
+
+.rhythm-settings {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(200px, 1fr) minmax(220px, 2fr);
+  align-items: end;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.8rem;
+  border: 1px solid var(--rk-border);
+  border-radius: 0.85rem;
+  background: var(--rk-bg);
+}
+
+.rhythm-settings > label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--rk-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.rhythm-settings .form-control,
+.rhythm-settings .form-select {
+  min-height: 40px;
+  color: var(--rk-text);
+  background-color: var(--rk-surface);
+  font-size: 0.82rem;
+}
+
+.time-signature-inputs {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.time-signature-inputs > span {
+  color: var(--rk-text);
+  font-size: 1rem;
+}
+
+.rhythm-settings > p {
+  margin: 0;
+  color: var(--rk-muted);
+  font-size: 0.72rem;
+}
+
+.rhythm-settings > .rhythm-settings-error {
+  color: #a33d30;
+  font-weight: 800;
 }
 
 .gesture-buttons {
@@ -1189,6 +1424,8 @@ onBeforeUnmount(() => {
   inset: 0;
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
+  overflow: auto;
   padding: clamp(1rem, 3vw, 2.5rem);
   color: var(--rk-text);
   background: var(--rk-bg);
@@ -1205,7 +1442,14 @@ onBeforeUnmount(() => {
   font-size: clamp(1.3rem, 3vw, 2rem);
 }
 
+.presentation-meter {
+  margin: 0.2rem 0 0;
+  color: var(--rk-muted);
+  font-size: 0.75rem;
+}
+
 .presentation-actions {
+  flex-wrap: wrap;
   justify-content: flex-end;
 }
 
@@ -1223,18 +1467,26 @@ onBeforeUnmount(() => {
 
 .presentation-stage {
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
+  min-height: clamp(220px, 34vh, 360px);
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  margin: 1.5rem auto;
+  margin: 0 auto;
   width: min(100%, 700px);
   border: 1px solid var(--rk-border);
   border-radius: 2rem;
   background: var(--rk-surface);
   box-shadow: var(--rk-shadow);
   text-align: center;
+}
+
+.presentation-next-label {
+  color: var(--rk-green-strong);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
 }
 
 .presentation-stage:has(.presentation-emoji-clap) {
@@ -1280,19 +1532,150 @@ onBeforeUnmount(() => {
   font-size: clamp(0.9rem, 2vw, 1.1rem);
 }
 
-.presentation-footer {
-  min-height: 48px;
+.presentation-grid-panel {
+  display: grid;
+  min-height: 0;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--rk-border);
+  border-radius: 1rem;
+  background: var(--rk-surface);
+}
+
+.presentation-grid-heading h3 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.presentation-grid-heading > span {
   color: var(--rk-muted);
-  font-size: 0.8rem;
+  font-size: 0.73rem;
   font-variant-numeric: tabular-nums;
 }
 
-.presentation-upcoming {
-  justify-content: center;
+.presentation-grid-scroll {
+  display: grid;
+  max-height: min(32vh, 260px);
+  gap: 0.45rem;
+  overflow: auto;
+  padding: 0.1rem;
 }
 
-.presentation-upcoming > span:not(:first-child) {
-  font-size: 1.3rem;
+.presentation-measure {
+  display: grid;
+  min-width: max-content;
+  grid-template-columns: 2.2rem minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.presentation-measure-number {
+  display: grid;
+  place-items: center;
+  border-right: 2px solid var(--rk-amber);
+  color: var(--rk-muted);
+  font-size: 0.78rem;
+}
+
+.presentation-beats {
+  display: grid;
+  grid-auto-columns: minmax(92px, 1fr);
+  grid-auto-flow: column;
+  gap: 0.35rem;
+}
+
+.presentation-beat {
+  position: relative;
+  display: flex;
+  min-height: 84px;
+  min-width: 92px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid var(--rk-border);
+  border-radius: 0.65rem;
+  background: var(--rk-bg);
+}
+
+.presentation-beat-current {
+  border-color: var(--rk-amber);
+  box-shadow: inset 0 0 0 1px var(--rk-amber);
+}
+
+.presentation-beat-number {
+  align-self: flex-start;
+  color: var(--rk-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.presentation-beat-empty {
+  color: var(--rk-border);
+  font-size: 1.2rem;
+}
+
+.presentation-cue-cell {
+  position: relative;
+  display: grid;
+  width: 100%;
+  justify-items: center;
+  gap: 0.08rem;
+  padding: 0.18rem 0.1rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: var(--rk-surface);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.presentation-cue-current {
+  opacity: 0.62;
+  background: var(--rk-surface-soft);
+}
+
+.presentation-cue-next {
+  border-color: var(--rk-green);
+  background: var(--rk-green-soft);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--rk-green) 35%, transparent),
+    0 0 16px color-mix(in srgb, var(--rk-green) 40%, transparent);
+  opacity: 1;
+  animation: next-cue-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.presentation-cue-badge {
+  color: var(--rk-green-strong);
+  font-size: 0.52rem;
+  font-weight: 1000;
+  letter-spacing: 0.06em;
+}
+
+.presentation-cue-icon {
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+
+.presentation-cue-time {
+  color: var(--rk-muted);
+  font-size: 0.61rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes next-cue-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.05);
+  }
+}
+
+.presentation-footer {
+  justify-content: flex-end;
 }
 
 @media (max-width: 680px) {
@@ -1330,6 +1713,14 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
+  .rhythm-settings {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rhythm-settings > p {
+    grid-column: 1 / -1;
+  }
+
   .presentation-launch-panel {
     align-items: stretch;
     flex-direction: column;
@@ -1344,17 +1735,30 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 
-  .presentation-footer {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.6rem;
+  .presentation-header {
+    align-items: flex-start;
+  }
+
+  .presentation-actions {
+    gap: 0.4rem;
+  }
+
+  .presentation-actions .btn {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .presentation-grid-panel {
+    padding: 0.55rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gesture-button,
-  .current-gesture-card {
+  .current-gesture-card,
+  .presentation-cue-next {
     transition: none;
+    animation: none;
   }
 }
 </style>

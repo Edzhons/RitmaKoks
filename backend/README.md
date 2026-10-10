@@ -45,6 +45,8 @@ On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/ap
 ```json
 {
   "schemaVersion": 2,
+  "tempo": 100,
+  "timeSignature": { "numerator": 4, "denominator": 4 },
   "cues": [
     { "id": "event-id", "at": 0.0, "gesture": "clap" },
     { "id": "next-id", "at": 1.25, "gesture": "stomp" }
@@ -52,8 +54,8 @@ On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/ap
 }
 ```
 
-`at` is the cue time in seconds from the beginning of the uploaded song. Supported gesture identifiers are `clap` (plaukšķis), `stomp` (kājiņa), and `snap` (pirkstu knipsis). Existing version 1 note-grid exercises are converted to clap cues when opened.
+`at` is the cue time in seconds from the beginning of the uploaded song. `tempo` is quarter notes per minute (30–240); `timeSignature` accepts numerators 2–12 and denominators 2, 4, 8, or 16. These settings arrange the presentation grid into measures and beats without changing the song or cue timestamps. Existing version 2 exercises without meter settings open with a 4/4 time signature at 100 BPM; existing version 1 note-grid exercises are converted to clap cues when opened.
 
 Audio files are uploaded separately using `POST /api/rhythm-exercises/{id}/audio` as `multipart/form-data` with an `audio` file field. MP3, WAV, OGG, M4A, and WEBM files up to 50 MB are accepted. `GET /api/rhythm-exercises/{id}/audio` streams the file with authenticated, owner/admin access; `DELETE` removes it. Audio is stored on Laravel's private local disk, outside the public web root, and is removed when replaced or explicitly deleted. The composition response returns `audio_url` when a song is attached. Teachers need permission to upload and distribute the songs they use.
 
-Skanošie žesti playback follows the uploaded song in the browser, highlights the current cue, and provides a presentation view. Public sharing remains part of the later library milestone. Krāsainās notis and the classroom-instrument activity are separate roadmap items.
+Skanošie žesti playback follows the uploaded song in the browser, distinguishes the current and next cue (including repeated gestures), and provides a measure-and-beat presentation grid with a return-to-start control. Public sharing remains part of the later library milestone. Krāsainās notis and the classroom-instrument activity are separate roadmap items.

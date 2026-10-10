@@ -1,5 +1,8 @@
 export const MAX_CUES = 500
 export const MAX_SEQUENCE_SECONDS = 60 * 60
+export const DEFAULT_TEMPO = 100
+export const DEFAULT_TIME_SIGNATURE = { numerator: 4, denominator: 4 }
+export const TIME_SIGNATURE_DENOMINATORS = [2, 4, 8, 16]
 
 export const GESTURES = [
   { id: 'clap', label: 'Plaukšķis', icon: '👏' },
@@ -8,7 +11,12 @@ export const GESTURES = [
 ]
 
 export function createEmptyGestureSequence() {
-  return { schemaVersion: 2, cues: [] }
+  return {
+    schemaVersion: 2,
+    tempo: DEFAULT_TEMPO,
+    timeSignature: { ...DEFAULT_TIME_SIGNATURE },
+    cues: [],
+  }
 }
 
 export function formatTime(seconds) {
@@ -28,6 +36,21 @@ export function normalizeGestureSequence(content) {
   if (content.schemaVersion === 2) {
     if (!Array.isArray(content.cues) || content.cues.length > MAX_CUES) {
       throw new Error(`Vingrinājumā nedrīkst būt vairāk par ${MAX_CUES} žestiem.`)
+    }
+
+    const tempo = content.tempo ?? DEFAULT_TEMPO
+    const timeSignature = content.timeSignature ?? DEFAULT_TIME_SIGNATURE
+    if (
+      !Number.isInteger(tempo) ||
+      tempo < 30 ||
+      tempo > 240 ||
+      !timeSignature ||
+      !Number.isInteger(timeSignature.numerator) ||
+      timeSignature.numerator < 2 ||
+      timeSignature.numerator > 12 ||
+      !TIME_SIGNATURE_DENOMINATORS.includes(timeSignature.denominator)
+    ) {
+      throw new Error('Šī vingrinājuma taktsmērs vai temps nav derīgs.')
     }
 
     const ids = new Set()
@@ -53,6 +76,8 @@ export function normalizeGestureSequence(content) {
 
     return {
       schemaVersion: 2,
+      tempo,
+      timeSignature: { ...timeSignature },
       cues: content.cues.map((cue) => ({ ...cue })),
     }
   }
@@ -88,7 +113,15 @@ export function normalizeGestureSequence(content) {
     throw new Error('Šī vingrinājuma žestu dati nav derīgi.')
   }
 
-  return { schemaVersion: 2, cues }
+  return {
+    schemaVersion: 2,
+    tempo: content.tempo,
+    timeSignature: {
+      numerator: content.timeSignature.numerator,
+      denominator: content.timeSignature.denominator,
+    },
+    cues,
+  }
 }
 
 export function getActiveCueId(cues, currentTime) {
@@ -100,6 +133,63 @@ export function getActiveCueId(cues, currentTime) {
   }
 
   return activeCueId
+}
+
+export function getActiveCueIndex(cues, currentTime) {
+  let activeCueIndex = -1
+
+  for (let index = 0; index < cues.length; index += 1) {
+    if (cues[index].at > currentTime) break
+    activeCueIndex = index
+  }
+
+  return activeCueIndex
+}
+
+export function getNextCueIndex(cues, currentTime) {
+  return cues.findIndex((cue) => cue.at > currentTime)
+}
+
+export function buildMeasureGrid(cues, duration, tempo, timeSignature) {
+  if (
+    !Number.isInteger(tempo) ||
+    tempo < 30 ||
+    tempo > 240 ||
+    !Number.isInteger(timeSignature?.numerator) ||
+    timeSignature.numerator < 2 ||
+    timeSignature.numerator > 12 ||
+    !TIME_SIGNATURE_DENOMINATORS.includes(timeSignature.denominator)
+  ) {
+    throw new Error('Taktsmērs vai temps nav derīgs.')
+  }
+
+  const beatDuration = (60 / tempo) * (4 / timeSignature.denominator)
+  const measureDuration = beatDuration * timeSignature.numerator
+  const lastCueTime = cues.at(-1)?.at || 0
+  const totalDuration = Math.max(duration, lastCueTime + 0.01, measureDuration)
+  const measureCount = Math.ceil(totalDuration / measureDuration)
+
+  const measures = Array.from({ length: measureCount }, (_, measureIndex) => ({
+    number: measureIndex + 1,
+    beats: Array.from({ length: timeSignature.numerator }, (_, beatIndex) => {
+      const startTime = (measureIndex * timeSignature.numerator + beatIndex) * beatDuration
+
+      return {
+        number: beatIndex + 1,
+        startTime,
+        cues: [],
+      }
+    }),
+  }))
+
+  cues.forEach((cue, cueIndex) => {
+    const absoluteBeat = Math.floor(cue.at / beatDuration)
+    const measureIndex = Math.floor(absoluteBeat / timeSignature.numerator)
+    const beatIndex = absoluteBeat % timeSignature.numerator
+    measures[measureIndex]?.beats[beatIndex].cues.push({ ...cue, cueIndex })
+  })
+
+  return measures
 }
 
 export function addGestureCue(cues, gesture, currentTime, id) {
