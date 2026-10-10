@@ -87,7 +87,7 @@ describe('SoundGesturesView', () => {
     expect(wrapper.text()).toContain('Mūzikas instrumentu')
   })
 
-  it('records the selected gesture at the song playback time', async () => {
+  it('snaps the selected gesture to a beat in the song', async () => {
     const { wrapper } = await mountEditor()
     const file = new File(['audio'], 'dziesma.mp3', { type: 'audio/mpeg' })
     const input = wrapper.get('input[type="file"]')
@@ -98,11 +98,14 @@ describe('SoundGesturesView', () => {
     expect(wrapper.find('audio').exists()).toBe(true)
     expect(wrapper.get('[aria-label="Pievienot Kājiņa pie 00:00.00"]').element.disabled).toBe(false)
     const audio = wrapper.get('audio').element
-    Object.defineProperty(audio, 'currentTime', { configurable: true, value: 12.345 })
+    Object.defineProperty(audio, 'duration', { configurable: true, value: 20 })
+    audio.dispatchEvent(new Event('loadedmetadata'))
+    await flushPromises()
+    Object.defineProperty(audio, 'currentTime', { configurable: true, value: 12.57 })
     await wrapper.get('[aria-label="Pievienot Kājiņa pie 00:00.00"]').trigger('click')
 
     expect(wrapper.get('.current-gesture-card strong').text()).toBe('Kājiņa')
-    expect(wrapper.get('.cue-time').text()).toBe('00:12.35')
+    expect(wrapper.get('.cue-time').text()).toBe('00:12.60')
     expect(wrapper.get('.cue-list-item-active').text()).toContain('Kājiņa')
   })
 
@@ -113,6 +116,10 @@ describe('SoundGesturesView', () => {
     Object.defineProperty(input.element, 'files', { configurable: true, value: [file] })
     await input.trigger('change')
     await flushPromises()
+    const audio = wrapper.get('audio').element
+    Object.defineProperty(audio, 'duration', { configurable: true, value: 30 })
+    audio.dispatchEvent(new Event('loadedmetadata'))
+    await flushPromises()
     await wrapper.get('[aria-label="Taktsmēra skaitītājs"]').setValue('3')
     await wrapper.get('[aria-label="Temps sitienos minūtē"]').setValue('120')
 
@@ -122,7 +129,6 @@ describe('SoundGesturesView', () => {
     await wrapper.get('[aria-label="Pievienot Plaukšķis pie 00:00.00"]').trigger('click')
     expect(launchButton.element.disabled).toBe(false)
 
-    const audio = wrapper.get('audio').element
     vi.spyOn(audio, 'pause').mockImplementation(() => {})
     Object.defineProperty(audio, 'currentTime', {
       configurable: true,
@@ -144,12 +150,13 @@ describe('SoundGesturesView', () => {
 
     expect(audio.currentTime).toBe(0)
     expect(wrapper.get('.presentation-overlay').exists()).toBe(true)
-    expect(wrapper.get('.presentation-stage h3').text()).toBe('Plaukšķis')
-    expect(wrapper.get('.presentation-emoji').text()).toBe('👏')
-    expect(wrapper.get('.presentation-next-label').text()).toBe('PAŠREIZĒJAIS ŽESTS')
-    expect(wrapper.get('.presentation-cue-next .presentation-cue-time').text()).toBe('00:00.80')
-    expect(wrapper.get('.presentation-meter').text()).toContain('3/4')
+    expect(wrapper.find('.presentation-stage').exists()).toBe(false)
+    expect(wrapper.get('.presentation-cue-current .presentation-cue-icon').text()).toBe('👏')
+    expect(wrapper.get('.presentation-cue-next .presentation-cue-icon').text()).toBe('👏')
+    expect(wrapper.get('.presentation-cue-next .presentation-cue-time').text()).toBe('00:01.00')
     expect(wrapper.findAll('.presentation-measure:first-child .presentation-beat')).toHaveLength(3)
+    await wrapper.get('[aria-label="Prezentācijas temps sitienos minūtē"]').setValue('110')
+    expect(wrapper.get('[aria-label="Temps sitienos minūtē"]').element.value).toBe('110')
 
     Object.defineProperty(audio, 'currentTime', {
       configurable: true,
@@ -166,7 +173,7 @@ describe('SoundGesturesView', () => {
     resource.create.mockResolvedValue({
       id: 42,
       title: 'Dziesmas žesti',
-      content: { schemaVersion: 2, cues: [{ id: 'cue-1', at: 0, gesture: 'clap' }] },
+      content: { schemaVersion: 3, cues: [{ id: 'cue-1', beat: 0, gesture: 'clap' }] },
     })
     mocks.apiRequest.mockResolvedValue({
       data: { id: 42, audio_url: '/api/rhythm-exercises/42/audio' },
@@ -189,7 +196,7 @@ describe('SoundGesturesView', () => {
     expect(resource.create).toHaveBeenCalledWith({
       title: 'Dziesmas žesti',
       content: {
-        schemaVersion: 2,
+        schemaVersion: 3,
         tempo: 100,
         timeSignature: { numerator: 4, denominator: 4 },
         cues: [],

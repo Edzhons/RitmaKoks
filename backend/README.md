@@ -44,17 +44,17 @@ On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/ap
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "tempo": 100,
   "timeSignature": { "numerator": 4, "denominator": 4 },
   "cues": [
-    { "id": "event-id", "at": 0.0, "gesture": "clap" },
-    { "id": "next-id", "at": 1.25, "gesture": "stomp" }
+    { "id": "event-id", "beat": 0, "gesture": "clap" },
+    { "id": "next-id", "beat": 2, "gesture": "stomp" }
   ]
 }
 ```
 
-`at` is the cue time in seconds from the beginning of the uploaded song. `tempo` is quarter notes per minute (30–240); `timeSignature` accepts numerators 2–12 and denominators 2, 4, 8, or 16. These settings arrange the presentation grid into measures and beats without changing the song or cue timestamps. Existing version 2 exercises without meter settings open with a 4/4 time signature at 100 BPM; existing version 1 note-grid exercises are converted to clap cues when opened.
+Each cue's `beat` is a zero-based integer beat index from the beginning of the song. Only one cue can occupy a beat; unoccupied beats are pauses. While recording, a gesture is snapped to the nearest available beat, preferring a later beat when equally near. `tempo` is quarter notes per minute (30–240), and `timeSignature` accepts numerators 2–12 and denominators 2, 4, 8, or 16. These settings define beat duration and measure grouping in the presentation; they do not change the uploaded audio. Existing version 2 second-based cues are converted to beats when opened, separating collisions onto available beats. Existing version 1 note-grid exercises are converted to clap cues.
 
 Audio files are uploaded separately using `POST /api/rhythm-exercises/{id}/audio` as `multipart/form-data` with an `audio` file field. MP3, WAV, OGG, M4A, and WEBM files up to 50 MB are accepted. `GET /api/rhythm-exercises/{id}/audio` streams the file with authenticated, owner/admin access; `DELETE` removes it. Audio is stored on Laravel's private local disk, outside the public web root, and is removed when replaced or explicitly deleted. The composition response returns `audio_url` when a song is attached. Teachers need permission to upload and distribute the songs they use.
 
