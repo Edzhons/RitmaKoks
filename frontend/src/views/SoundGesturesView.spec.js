@@ -82,6 +82,7 @@ describe('SoundGesturesView', () => {
     expect(wrapper.get('h1').text()).toBe('Skanošie žesti')
     expect(wrapper.findAll('.gesture-button')).toHaveLength(3)
     expect(wrapper.get('.gesture-button').element.disabled).toBe(true)
+    expect(wrapper.get('.presentation-launch-button').element.disabled).toBe(true)
     expect(wrapper.get('.audio-empty').text()).toContain('Izvēlies dziesmu')
     expect(wrapper.text()).toContain('Mūzikas instrumentu')
   })
@@ -103,6 +104,36 @@ describe('SoundGesturesView', () => {
     expect(wrapper.get('.current-gesture-card strong').text()).toBe('Kājiņa')
     expect(wrapper.get('.cue-time').text()).toBe('00:12.35')
     expect(wrapper.get('.cue-list-item-active').text()).toContain('Kājiņa')
+  })
+
+  it('starts presentation from the beginning and highlights the first gesture', async () => {
+    const { wrapper } = await mountEditor()
+    const file = new File(['audio'], 'dziesma.mp3', { type: 'audio/mpeg' })
+    const input = wrapper.get('input[type="file"]')
+    Object.defineProperty(input.element, 'files', { configurable: true, value: [file] })
+    await input.trigger('change')
+    await flushPromises()
+
+    const launchButton = wrapper.get('.presentation-launch-button')
+    expect(launchButton.element.disabled).toBe(true)
+
+    await wrapper.get('[aria-label="Pievienot Plaukšķis pie 00:00.00"]').trigger('click')
+    expect(launchButton.element.disabled).toBe(false)
+
+    const audio = wrapper.get('audio').element
+    vi.spyOn(audio, 'pause').mockImplementation(() => {})
+    Object.defineProperty(audio, 'currentTime', {
+      configurable: true,
+      writable: true,
+      value: 6.5,
+    })
+    audio.dispatchEvent(new Event('timeupdate'))
+    await launchButton.trigger('click')
+
+    expect(audio.currentTime).toBe(0)
+    expect(wrapper.get('.presentation-overlay').exists()).toBe(true)
+    expect(wrapper.get('.presentation-stage h3').text()).toBe('Plaukšķis')
+    expect(wrapper.get('.presentation-emoji').text()).toBe('👏')
   })
 
   it('saves gesture cues and uploads a selected soundtrack as multipart data', async () => {

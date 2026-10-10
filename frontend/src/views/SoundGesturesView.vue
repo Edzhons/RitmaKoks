@@ -239,6 +239,17 @@ function toggleAudioPlayback() {
   }
 }
 
+function startPresentation() {
+  if (!audioElement.value || cues.value.length === 0) return
+
+  audioElement.value.pause()
+  audioElement.value.currentTime = 0
+  currentTime.value = 0
+  activeCueId.value = getActiveCueId(cues.value, 0)
+  isPlaying.value = false
+  presentationMode.value = true
+}
+
 async function uploadSelectedAudio(exerciseId) {
   if (!selectedAudioFile.value) return null
 
@@ -592,6 +603,29 @@ onBeforeUnmount(() => {
             sadaļā vēlāk varēs pievienot kociņus, trijstūri un citus klasē pieejamos instrumentus.
           </p>
         </aside>
+
+        <section class="presentation-launch-panel" aria-labelledby="presentation-launch-title">
+          <div>
+            <span class="step-label">NODARBĪBAI</span>
+            <h2 id="presentation-launch-title">Rādi žestus klasei</h2>
+            <p>
+              Sāc prezentāciju, lai dziesmai skanot uz ekrāna izceltu katru nākamo žestu. Atverot
+              režīmu, dziesma sāksies no sākuma.
+            </p>
+            <p v-if="!hasAudio || !cues.length" class="presentation-requirement">
+              Lai sāktu, pievieno dziesmu un vismaz vienu žestu.
+            </p>
+          </div>
+          <button
+            class="btn btn-primary presentation-launch-button"
+            type="button"
+            :disabled="!hasAudio || cues.length === 0"
+            @click="startPresentation"
+          >
+            <i class="bi bi-easel" aria-hidden="true"></i>
+            Sākt prezentāciju
+          </button>
+        </section>
       </main>
     </div>
 
@@ -729,13 +763,61 @@ onBeforeUnmount(() => {
 
 .song-panel,
 .gesture-panel,
-.save-panel {
+.save-panel,
+.presentation-launch-panel {
   min-width: 0;
   padding: clamp(1rem, 3vw, 1.5rem);
   border: 1px solid var(--rk-border);
   border-radius: 1.3rem;
   background: var(--rk-surface);
   box-shadow: var(--rk-shadow);
+}
+
+.presentation-launch-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-color: var(--rk-green);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--rk-green-soft) 75%, var(--rk-surface)),
+    var(--rk-surface)
+  );
+}
+
+.presentation-launch-panel h2 {
+  margin: 0.25rem 0 0.35rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.35rem;
+}
+
+.presentation-launch-panel p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--rk-muted);
+  font-size: 0.82rem;
+}
+
+.presentation-launch-panel .presentation-requirement {
+  margin-top: 0.45rem;
+  color: var(--rk-green-strong);
+  font-weight: 700;
+}
+
+.presentation-launch-button {
+  display: inline-flex;
+  min-height: 48px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.2rem;
+  font-weight: 800;
+}
+
+.presentation-launch-button:disabled {
+  cursor: not-allowed;
 }
 
 .panel-heading {
@@ -1248,7 +1330,17 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
+  .presentation-launch-panel {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
   .save-button {
+    width: 100%;
+  }
+
+  .presentation-launch-button {
     width: 100%;
   }
 
