@@ -73,27 +73,6 @@ async function signOut() {
               >
                 Par projektu
               </RouterLink>
-              <RouterLink
-                v-if="!auth.isAuthenticated"
-                class="nav-link"
-                to="/login"
-                active-class="active"
-                @click="menuOpen = false"
-              >
-                Pieteikties
-              </RouterLink>
-              <RouterLink
-                v-if="!auth.isAuthenticated"
-                class="nav-link"
-                to="/register"
-                active-class="active"
-                @click="menuOpen = false"
-              >
-                Reģistrēties
-              </RouterLink>
-              <button v-else class="nav-link nav-link-button" type="button" @click="signOut">
-                Izrakstīties
-              </button>
             </div>
 
             <div class="navbar-actions">
@@ -117,6 +96,34 @@ async function signOut() {
               >
                 Iepazīt ritma studiju
               </RouterLink>
+              <section class="account-panel" aria-label="Lietotāja konts">
+                <template v-if="auth.isAuthenticated">
+                  <span class="account-avatar" aria-hidden="true">
+                    {{ auth.user.name.charAt(0).toLocaleUpperCase('lv') }}
+                  </span>
+                  <span class="account-details">
+                    <span class="account-caption">Pieslēdzies kā</span>
+                    <span class="account-name">{{ auth.user.name }}</span>
+                  </span>
+                  <button
+                    class="account-action"
+                    type="button"
+                    data-testid="account-logout"
+                    @click="signOut"
+                  >
+                    Izrakstīties
+                  </button>
+                </template>
+                <template v-else>
+                  <span class="account-caption">Mans konts</span>
+                  <RouterLink class="account-login" to="/login" @click="menuOpen = false">
+                    Pieteikties
+                  </RouterLink>
+                  <RouterLink class="account-register" to="/register" @click="menuOpen = false">
+                    Reģistrēties
+                  </RouterLink>
+                </template>
+              </section>
             </div>
           </div>
         </div>

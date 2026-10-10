@@ -1,9 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App.vue'
+import { useAuthStore } from './stores/auth'
 import AboutView from './views/AboutView.vue'
 import HomeView from './views/HomeView.vue'
 import LibraryView from './views/LibraryView.vue'
@@ -19,14 +20,19 @@ function createTestRouter() {
   })
 }
 
-async function mountApp() {
+async function mountApp(user = null) {
+  const pinia = createPinia()
+  const auth = useAuthStore(pinia)
+  auth.user = user
+  auth.initialized = true
+
   const router = createTestRouter()
   await router.push('/')
   await router.isReady()
 
   const wrapper = mount(App, {
     global: {
-      plugins: [createPinia(), router],
+      plugins: [pinia, router],
     },
   })
 
@@ -46,12 +52,38 @@ describe('application shell', () => {
 
     expect(wrapper.get('.brand-name').text()).toBe('RitmaKoks')
     expect(wrapper.get('nav[aria-label="Galvenā navigācija"]').text()).toContain('Bibliotēka')
+    expect(wrapper.get('.account-panel').text()).toContain('Mans konts')
+    expect(wrapper.get('.account-panel a[href="/login"]').text()).toBe('Pieteikties')
+    expect(wrapper.get('.account-panel a[href="/register"]').text()).toBe('Reģistrēties')
+    expect(wrapper.find('.site-nav-links a[href="/login"]').exists()).toBe(false)
     expect(wrapper.get('#hero-title').text()).toContain('Sāc ar ritmu.')
     expect(wrapper.get('.studio-card--featured h3').text()).toBe('Ritma studija')
     expect(wrapper.get('.studio-card--featured .studio-status').text()).toBe(
       'RitmaKoka galvenā sadaļa',
     )
     expect(wrapper.findAll('.studio-card')).toHaveLength(3)
+  })
+
+  it('shows the signed-in user name and logs out from the account section', async () => {
+    const { wrapper } = await mountApp({
+      id: 1,
+      name: 'Anna Ozola',
+      email: 'anna@example.com',
+      role: 'user',
+    })
+    const auth = useAuthStore()
+    auth.logout = vi.fn(async () => {
+      auth.user = null
+    })
+
+    expect(wrapper.get('.account-panel').text()).toContain('Anna Ozola')
+    expect(wrapper.get('[data-testid="account-logout"]').text()).toBe('Izrakstīties')
+
+    await wrapper.get('[data-testid="account-logout"]').trigger('click')
+    await flushPromises()
+
+    expect(auth.logout).toHaveBeenCalledOnce()
+    expect(wrapper.get('.account-panel').text()).toContain('Mans konts')
   })
 
   it('switches and remembers the selected color theme', async () => {
