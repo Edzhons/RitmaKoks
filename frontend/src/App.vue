@@ -59,6 +59,14 @@ async function signOut() {
               </RouterLink>
               <RouterLink
                 class="nav-link"
+                to="/rhythm-studio"
+                active-class="active"
+                @click="menuOpen = false"
+              >
+                Ritma studija
+              </RouterLink>
+              <RouterLink
+                class="nav-link"
                 to="/library"
                 active-class="active"
                 @click="menuOpen = false"
@@ -91,10 +99,10 @@ async function signOut() {
               </button>
               <RouterLink
                 class="btn btn-primary nav-cta"
-                :to="{ name: 'home', hash: '#studios' }"
+                to="/rhythm-studio"
                 @click="menuOpen = false"
               >
-                Iepazīt ritma studiju
+                Atvērt studiju
               </RouterLink>
               <section class="account-panel" aria-label="Lietotāja konts">
                 <template v-if="auth.isAuthenticated">

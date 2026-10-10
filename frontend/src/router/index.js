@@ -41,6 +41,11 @@ const router = createRouter({
       component: () => import('../views/LibraryView.vue'),
     },
     {
+      path: '/rhythm-studio',
+      name: 'rhythm-studio',
+      component: () => import('../views/RhythmStudioView.vue'),
+    },
+    {
       path: '/about',
       name: 'about',
       component: AboutView,

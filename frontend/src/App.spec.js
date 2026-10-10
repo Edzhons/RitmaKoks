@@ -8,12 +8,14 @@ import { useAuthStore } from './stores/auth'
 import AboutView from './views/AboutView.vue'
 import HomeView from './views/HomeView.vue'
 import LibraryView from './views/LibraryView.vue'
+import RhythmStudioView from './views/RhythmStudioView.vue'
 
 function createTestRouter() {
   return createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'home', component: HomeView },
+      { path: '/rhythm-studio', name: 'rhythm-studio', component: RhythmStudioView },
       { path: '/library', name: 'library', component: LibraryView },
       { path: '/about', name: 'about', component: AboutView },
     ],
@@ -110,7 +112,7 @@ describe('application shell', () => {
     expect(wrapper.get('.nav-link.active').text()).toBe('Bibliotēka')
   })
 
-  it('takes the header action to the studios section from other pages', async () => {
+  it('opens the rhythm studio from its header action', async () => {
     const { wrapper, router } = await mountApp()
 
     await router.push('/library')
@@ -118,8 +120,20 @@ describe('application shell', () => {
     await wrapper.get('.nav-cta').trigger('click')
     await flushPromises()
 
-    expect(router.currentRoute.value.fullPath).toBe('/#studios')
-    expect(wrapper.find('#studios').exists()).toBe(true)
+    expect(router.currentRoute.value.fullPath).toBe('/rhythm-studio')
+    expect(wrapper.get('h1').text()).toBe('Veido savu ritmu.')
+    expect(wrapper.get('.nav-link.active').text()).toBe('Ritma studija')
+  })
+
+  it('opens a working rhythm editor from the homepage studio card', async () => {
+    const { wrapper, router } = await mountApp()
+
+    await wrapper.get('.studio-card--featured .studio-card-action').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.name).toBe('rhythm-studio')
+    expect(wrapper.get('.rhythm-score-panel h2').text()).toBe('Tavs ritma pieraksts')
+    expect(wrapper.get('.sign-in-note').text()).toContain('Lai saglabātu vingrinājumus')
   })
 
   it('collapses and expands the mobile navigation accessibly', async () => {

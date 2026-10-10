@@ -40,4 +40,19 @@ Clients may filter lists with `search`, `category_id`, `page`, and `per_page` (1
 
 Regular users only see and manage their own works; administrators can access all compositions. New works are always assigned to the authenticated user. Clients cannot set ownership, publication status, deletion status, or source attribution. Publishing is reserved for the later library/moderation workflow. Deletion is soft, and each owner's deleted works are listed separately and can be restored.
 
-On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/api.js) sends credentialed requests and CSRF headers; [`../frontend/src/composables/useCrudResource.js`](../frontend/src/composables/useCrudResource.js) provides shared collection, pagination, pending, validation-error, save, delete, and restore state for the future editors/library. No editor UI is implemented in this milestone.
+On the Vue side, [`../frontend/src/services/api.js`](../frontend/src/services/api.js) sends credentialed requests and CSRF headers; [`../frontend/src/composables/useCrudResource.js`](../frontend/src/composables/useCrudResource.js) provides shared collection, pagination, pending, validation-error, save, delete, and restore state. The rhythm editor stores its score in the composition `content` field as versioned JSON:
+
+```json
+{
+  "schemaVersion": 1,
+  "timeSignature": { "numerator": 4, "denominator": 4 },
+  "tempo": 90,
+  "measureCount": 2,
+  "events": [
+    { "id": "event-id", "measure": 1, "position": 0, "duration": 4, "kind": "sound" },
+    { "id": "rest-id", "measure": 1, "position": 4, "duration": 4, "kind": "rest" }
+  ]
+}
+```
+
+`position` and `duration` are measured in sixteenth-note subdivisions from the start of each measure. Durations supported by the editor are 16, 8, 4, 2, and 1 subdivisions (whole through sixteenth note). Rhythm playback and presentation run in the browser; saved exercises remain private to their owner until the later library/publishing workflow.

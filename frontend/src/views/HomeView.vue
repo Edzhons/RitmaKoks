@@ -16,10 +16,10 @@ import StudioCard from '../components/StudioCard.vue'
           RitmaKoka galveno sadaļu.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#ritma-studija">
-            Iepazīt ritma studiju
-            <i class="bi bi-arrow-down ms-1" aria-hidden="true"></i>
-          </a>
+          <RouterLink class="btn btn-primary" to="/rhythm-studio">
+            Atvērt ritma studiju
+            <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+          </RouterLink>
           <RouterLink class="hero-secondary" to="/library">
             Apskatīt bibliotēku
             <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
@@ -63,7 +63,8 @@ import StudioCard from '../components/StudioCard.vue'
           title="Ritma studija"
           description="Apgūsti ritmu, veido vingrinājumus un nostiprini mūzikas stundās apgūto. Šī ir RitmaKoka galvenā mācību sadaļa."
           status="RitmaKoka galvenā sadaļa"
-          action="Plānota 6. solī"
+          action="Atvērt ritma studiju"
+          to="/rhythm-studio"
           tone="featured"
           featured
         />
