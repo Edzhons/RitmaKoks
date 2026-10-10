@@ -434,7 +434,7 @@
 
 .studio-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -458,6 +458,25 @@
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--rk-green) 42%, var(--rk-border));
   box-shadow: var(--rk-shadow);
+}
+
+.studio-card--featured {
+  grid-column: 1 / -1;
+  min-height: 250px;
+  padding: clamp(1.6rem, 4vw, 2.35rem);
+  border-color: color-mix(in srgb, var(--rk-green) 34%, transparent);
+  background:
+    radial-gradient(ellipse at 88% 15%, rgb(213 154 67 / 13%), transparent 34%),
+    var(--rk-green-soft);
+}
+
+.studio-card--featured h3 {
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+}
+
+.studio-card--featured p {
+  max-width: 680px;
+  font-size: 1rem;
 }
 
 .studio-card-top {
@@ -773,6 +792,11 @@
 
   .studio-grid {
     grid-template-columns: 1fr;
+  }
+
+  .studio-card--featured {
+    grid-column: auto;
+    min-height: 235px;
   }
 
   .studio-card {

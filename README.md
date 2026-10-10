@@ -1,13 +1,13 @@
 # RitmaKoks
 
-RitmaKoks is a web-based music education platform for creating rhythm exercises and musical compositions.
+RitmaKoks is a Latvian-language music education platform for schools, teachers, and students. Its central learning area is the rhythm studio, supported by tools for creating rhythm exercises and musical compositions.
 
 ## Project structure
 
 - `backend/` — Laravel REST API
 - `frontend/` — Vue 3 single-page application with Bootstrap 5 and custom responsive styles
 
-The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The frontend provides a responsive, theme-aware application shell; rhythm and melody editing, authentication, and the full library are planned for later roadmap steps.
+The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The frontend provides a responsive Latvian-language, theme-aware application shell with the rhythm studio presented as its main learning area. Rhythm and melody editing, authentication, and the full library are planned for later roadmap steps.
 
 ## Requirements
 

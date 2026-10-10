@@ -9,10 +9,10 @@ const menuOpen = ref(false)
 
 <template>
   <div class="app-shell">
-    <a class="skip-link" href="#main-content">Skip to content</a>
+    <a class="skip-link" href="#main-content">Pāriet uz saturu</a>
 
     <header class="site-header">
-      <nav class="navbar navbar-expand-lg site-navbar" aria-label="Main navigation">
+      <nav class="navbar navbar-expand-lg site-navbar" aria-label="Galvenā navigācija">
         <div class="container site-container">
           <RouterLink class="navbar-brand brand-lockup" to="/" @click="menuOpen = false">
             <span class="brand-mark" aria-hidden="true">
@@ -20,7 +20,7 @@ const menuOpen = ref(false)
             </span>
             <span class="brand-copy">
               <span class="brand-name">RitmaKoks</span>
-              <span class="brand-tagline">A little more music, every day</span>
+              <span class="brand-tagline">Mūzika sākas ar ritmu</span>
             </span>
           </RouterLink>
 
@@ -29,7 +29,7 @@ const menuOpen = ref(false)
             type="button"
             :aria-expanded="menuOpen"
             aria-controls="primary-navigation"
-            :aria-label="menuOpen ? 'Close navigation menu' : 'Open navigation menu'"
+            :aria-label="menuOpen ? 'Aizvērt navigācijas izvēlni' : 'Atvērt navigācijas izvēlni'"
             @click="menuOpen = !menuOpen"
           >
             <i :class="menuOpen ? 'bi bi-x-lg' : 'bi bi-list'" aria-hidden="true"></i>
@@ -43,7 +43,7 @@ const menuOpen = ref(false)
                 exact-active-class="active"
                 @click="menuOpen = false"
               >
-                Home
+                Sākums
               </RouterLink>
               <RouterLink
                 class="nav-link"
@@ -51,7 +51,7 @@ const menuOpen = ref(false)
                 active-class="active"
                 @click="menuOpen = false"
               >
-                Library
+                Bibliotēka
               </RouterLink>
               <RouterLink
                 class="nav-link"
@@ -59,7 +59,7 @@ const menuOpen = ref(false)
                 active-class="active"
                 @click="menuOpen = false"
               >
-                About
+                Par projektu
               </RouterLink>
             </div>
 
@@ -68,8 +68,8 @@ const menuOpen = ref(false)
                 class="theme-toggle"
                 type="button"
                 data-testid="theme-toggle"
-                :aria-label="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                :title="theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+                :aria-label="theme.isDark ? 'Ieslēgt gaišo režīmu' : 'Ieslēgt tumšo režīmu'"
+                :title="theme.isDark ? 'Ieslēgt gaišo režīmu' : 'Ieslēgt tumšo režīmu'"
                 @click="theme.toggleTheme"
               >
                 <i
@@ -82,7 +82,7 @@ const menuOpen = ref(false)
                 :to="{ name: 'home', hash: '#studios' }"
                 @click="menuOpen = false"
               >
-                Start exploring
+                Iepazīt ritma studiju
               </RouterLink>
             </div>
           </div>
@@ -100,8 +100,8 @@ const menuOpen = ref(false)
           <i class="bi bi-music-note-list" aria-hidden="true"></i>
           RitmaKoks
         </RouterLink>
-        <p>Made for curious ears and creative minds.</p>
-        <span class="footer-note">A good place to begin.</span>
+        <p>Radīts zinātkārām ausīm un radošiem prātiem.</p>
+        <span class="footer-note">Skaists sākums mūzikai.</span>
       </div>
     </footer>
   </div>

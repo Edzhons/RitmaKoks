@@ -2,6 +2,10 @@
 import { RouterLink } from 'vue-router'
 
 defineProps({
+  id: {
+    type: String,
+    default: null,
+  },
   icon: {
     type: String,
     required: true,
@@ -30,11 +34,19 @@ defineProps({
     type: String,
     default: 'green',
   },
+  featured: {
+    type: Boolean,
+    default: false,
+  },
 })
 </script>
 
 <template>
-  <article class="studio-card" :class="`studio-card--${tone}`">
+  <article
+    class="studio-card"
+    :class="[`studio-card--${tone}`, { 'studio-card--featured': featured }]"
+    :id="id"
+  >
     <div class="studio-card-top">
       <span class="studio-icon" aria-hidden="true">
         <i :class="`bi ${icon}`"></i>

@@ -5,11 +5,10 @@ import { RouterLink } from 'vue-router'
 <template>
   <div class="page-shell">
     <header class="page-heading">
-      <span class="eyebrow">THE MUSIC LIBRARY</span>
-      <h1>Ideas worth sharing.</h1>
+      <span class="eyebrow">MŪZIKAS BIBLIOTĒKA</span>
+      <h1>Idejas, ar kurām dalīties.</h1>
       <p>
-        A growing collection of rhythm exercises and melodies to explore, learn from, and make your
-        own.
+        Ritma vingrinājumu un melodiju krājums, ko iepazīt, apgūt un papildināt ar savām idejām.
       </p>
     </header>
 
@@ -17,13 +16,13 @@ import { RouterLink } from 'vue-router'
       <span class="empty-state-icon" aria-hidden="true">
         <i class="bi bi-collection"></i>
       </span>
-      <h2 id="library-empty-title">The library is taking shape</h2>
+      <h2 id="library-empty-title">Bibliotēka vēl top</h2>
       <p>
-        Search, categories, and community compositions are planned for Step 08. For now, the best
-        place to start is the creative home.
+        Darbu meklēšana, kategorijas un skolotāju koplietoti skaņdarbi paredzēti 8. solī. Tikmēr
+        iepazīsti galveno sadaļu — ritma studiju.
       </p>
-      <RouterLink class="btn btn-primary mt-4" to="/">
-        Back to the beginning
+      <RouterLink class="btn btn-primary mt-4" :to="{ name: 'home', hash: '#ritma-studija' }">
+        Uzzināt par ritma studiju
         <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
       </RouterLink>
     </section>

@@ -1,19 +1,19 @@
 <template>
   <div class="page-shell">
     <header class="page-heading">
-      <span class="eyebrow">OUR LITTLE CORNER OF MUSIC</span>
-      <h1>A place for learning, listening, and making.</h1>
-      <p>RitmaKoks is a welcoming music education space that grows with every note.</p>
+      <span class="eyebrow">MŪSU MŪZIKAS PASAULE</span>
+      <h1>Vieta, kur mācīties, klausīties un radīt.</h1>
+      <p>RitmaKoks ir mūzikas izglītības vide, kas aug līdz ar katru apgūto noti.</p>
     </header>
 
-    <section class="about-panel" aria-label="About RitmaKoks">
+    <section class="about-panel" aria-label="Par RitmaKoku">
       <p>
-        The name RitmaKoks means “rhythm tree” — a reminder that musical skills grow over time.
-        Explore a beat, follow a melody, and learn by creating at your own pace.
+        RitmaKoks nosaukums apvieno ritmu un koku — kā atgādinājumu, ka muzikālās prasmes aug
+        pamazām. Iepazīsti ritmu, seko melodijai un mācies, pašam muzicējot.
       </p>
       <p>
-        We are starting with a simple foundation. Rhythm and melody studios, a shared library, and
-        more learning tools will grow here step by step.
+        Šī vide top Latvijas skolotājiem un skolēniem. Ritma studija būs galvenā vieta ritma
+        apguvei; tai pakāpeniski pievienosies melodiju studija, bibliotēka un citi mācību rīki.
       </p>
     </section>
   </div>

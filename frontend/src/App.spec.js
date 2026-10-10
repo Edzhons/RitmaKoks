@@ -41,12 +41,16 @@ describe('application shell', () => {
     document.documentElement.removeAttribute('data-bs-theme')
   })
 
-  it('shows the brand, accessible navigation, and starter dashboard', async () => {
+  it('shows the Latvian brand, accessible navigation, and rhythm-first dashboard', async () => {
     const { wrapper } = await mountApp()
 
     expect(wrapper.get('.brand-name').text()).toBe('RitmaKoks')
-    expect(wrapper.get('nav[aria-label="Main navigation"]').text()).toContain('Library')
-    expect(wrapper.get('#hero-title').text()).toContain('Find your rhythm.')
+    expect(wrapper.get('nav[aria-label="Galvenā navigācija"]').text()).toContain('Bibliotēka')
+    expect(wrapper.get('#hero-title').text()).toContain('Sāc ar ritmu.')
+    expect(wrapper.get('.studio-card--featured h3').text()).toBe('Ritma studija')
+    expect(wrapper.get('.studio-card--featured .studio-status').text()).toBe(
+      'RitmaKoka galvenā sadaļa',
+    )
     expect(wrapper.findAll('.studio-card')).toHaveLength(3)
   })
 
@@ -55,13 +59,13 @@ describe('application shell', () => {
     const themeButton = wrapper.get('[data-testid="theme-toggle"]')
 
     expect(document.documentElement.getAttribute('data-bs-theme')).toBe('light')
-    expect(themeButton.attributes('aria-label')).toBe('Switch to dark mode')
+    expect(themeButton.attributes('aria-label')).toBe('Ieslēgt tumšo režīmu')
 
     await themeButton.trigger('click')
 
     expect(document.documentElement.getAttribute('data-bs-theme')).toBe('dark')
     expect(localStorage.getItem('ritmakoks-theme')).toBe('dark')
-    expect(themeButton.attributes('aria-label')).toBe('Switch to light mode')
+    expect(themeButton.attributes('aria-label')).toBe('Ieslēgt gaišo režīmu')
   })
 
   it('navigates to the honest library placeholder', async () => {
@@ -70,8 +74,8 @@ describe('application shell', () => {
     await router.push('/library')
     await flushPromises()
 
-    expect(wrapper.get('#library-empty-title').text()).toBe('The library is taking shape')
-    expect(wrapper.get('.nav-link.active').text()).toBe('Library')
+    expect(wrapper.get('#library-empty-title').text()).toBe('Bibliotēka vēl top')
+    expect(wrapper.get('.nav-link.active').text()).toBe('Bibliotēka')
   })
 
   it('takes the header action to the studios section from other pages', async () => {
@@ -91,10 +95,12 @@ describe('application shell', () => {
     const menuButton = wrapper.get('.mobile-menu-toggle')
 
     expect(menuButton.attributes('aria-expanded')).toBe('false')
+    expect(menuButton.attributes('aria-label')).toBe('Atvērt navigācijas izvēlni')
 
     await menuButton.trigger('click')
 
     expect(menuButton.attributes('aria-expanded')).toBe('true')
+    expect(menuButton.attributes('aria-label')).toBe('Aizvērt navigācijas izvēlni')
     expect(wrapper.get('#primary-navigation').classes()).toContain('show')
   })
 })

@@ -8,22 +8,22 @@ import StudioCard from '../components/StudioCard.vue'
       <div class="hero-copy">
         <span class="eyebrow hero-eyebrow">
           <span class="eyebrow-dot"></span>
-          YOUR CREATIVE SPACE
+          TAVA MŪZIKAS TELPA
         </span>
-        <h1 id="hero-title" class="hero-title">Make music.<br />Find your <em>rhythm.</em></h1>
+        <h1 id="hero-title" class="hero-title">Sāc ar ritmu.<br />Veido savu <em>mūziku.</em></h1>
         <p class="hero-description">
-          A welcoming place to explore rhythm, create melodies, and grow your musical confidence —
-          one note at a time.
+          Atklāj ritmu, veido melodijas un iepazīsti mūziku soli pa solim. Sāc ar ritma studiju —
+          RitmaKoka galveno sadaļu.
         </p>
         <div class="hero-actions">
-          <RouterLink class="btn btn-primary" to="/library">
-            Explore the library
-            <i class="bi bi-arrow-up-right ms-1" aria-hidden="true"></i>
-          </RouterLink>
-          <a class="hero-secondary" href="#studios">
-            See what you can create
-            <i class="bi bi-arrow-down" aria-hidden="true"></i>
+          <a class="btn btn-primary" href="#ritma-studija">
+            Iepazīt ritma studiju
+            <i class="bi bi-arrow-down ms-1" aria-hidden="true"></i>
           </a>
+          <RouterLink class="hero-secondary" to="/library">
+            Apskatīt bibliotēku
+            <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+          </RouterLink>
         </div>
       </div>
 
@@ -39,7 +39,7 @@ import StudioCard from '../components/StudioCard.vue'
               <span>♪</span>
             </div>
           </div>
-          <span class="note-card-caption">Find your own tempo</span>
+          <span class="note-card-caption">Atrodi savu ritmu</span>
         </div>
       </div>
     </section>
@@ -47,43 +47,49 @@ import StudioCard from '../components/StudioCard.vue'
     <section id="studios" aria-labelledby="studios-title">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">A PLACE TO BEGIN</span>
-          <h2 id="studios-title">Choose your kind of music</h2>
+          <span class="eyebrow">MĀCIES UN RADI</span>
+          <h2 id="studios-title">Ritms ir sākums</h2>
         </div>
-        <p>Start with a beat, follow a melody, or find something new to try.</p>
+        <p>
+          Ritma studija ir galvenā vieta mūzikas mācību satura apguvei. Tai līdzās augs arī citi
+          radoši rīki.
+        </p>
       </div>
 
       <div class="studio-grid">
         <StudioCard
+          id="ritma-studija"
           icon="bi-music-note-list"
-          title="Rhythm studio"
-          description="Build steady beats and explore how rhythm brings music to life."
-          status="Coming in Step 06"
-          action="Studio in the works"
+          title="Ritma studija"
+          description="Apgūsti ritmu, veido vingrinājumus un nostiprini mūzikas stundās apgūto. Šī ir RitmaKoka galvenā mācību sadaļa."
+          status="RitmaKoka galvenā sadaļa"
+          action="Plānota 6. solī"
+          tone="featured"
+          featured
         />
         <StudioCard
           icon="bi-soundwave"
-          title="Melody studio"
-          description="Arrange notes and rests into a melody that feels like your own."
-          status="Coming in Step 07"
-          action="Studio in the works"
+          title="Melodiju studija"
+          description="Sakārto notis un pauzes, lai izveidotu savu melodiju."
+          status="Plānota 7. solī"
+          action="Tiek plānota"
           tone="amber"
         />
         <StudioCard
           icon="bi-collection"
-          title="Music library"
-          description="Discover ideas, save favorites, and share what you create."
-          status="Coming in Step 08"
-          action="Take a look around"
+          title="Mūzikas bibliotēka"
+          description="Atrodi idejas, saglabā sev noderīgo un dalies ar saviem darbiem."
+          status="Plānota 8. solī"
+          action="Apskatīt bibliotēku"
           to="/library"
         />
       </div>
 
-      <aside class="gentle-reminder" aria-label="A note about learning">
+      <aside class="gentle-reminder" aria-label="Piezīme par mācīšanos">
         <span class="reminder-icon" aria-hidden="true">
           <i class="bi bi-flower1"></i>
         </span>
-        <p><strong>Grow at your own pace.</strong> There is no wrong way to begin making music.</p>
+        <p><strong>Mācies savā tempā.</strong> Mūziku var sākt iepazīt dažādos veidos.</p>
       </aside>
     </section>
   </div>
