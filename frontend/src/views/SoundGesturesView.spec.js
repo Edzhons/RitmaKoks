@@ -109,7 +109,7 @@ describe('SoundGesturesView', () => {
     expect(wrapper.get('.cue-list-item-active').text()).toContain('Kājiņa')
   })
 
-  it('starts presentation from the beginning and highlights the first gesture', async () => {
+  it('shows a large scrolling beat sequence and highlights the exact current beat', async () => {
     const { wrapper } = await mountEditor()
     const file = new File(['audio'], 'dziesma.mp3', { type: 'audio/mpeg' })
     const input = wrapper.get('input[type="file"]')
@@ -149,14 +149,22 @@ describe('SoundGesturesView', () => {
     await launchButton.trigger('click')
 
     expect(audio.currentTime).toBe(0)
+    expect(document.body.style.overflow).toBe('hidden')
     expect(wrapper.get('.presentation-overlay').exists()).toBe(true)
     expect(wrapper.find('.presentation-stage').exists()).toBe(false)
-    expect(wrapper.get('.presentation-cue-current .presentation-cue-icon').text()).toBe('👏')
-    expect(wrapper.get('.presentation-cue-next .presentation-cue-icon').text()).toBe('👏')
-    expect(wrapper.get('.presentation-cue-next .presentation-cue-time').text()).toBe('00:01.00')
-    expect(wrapper.findAll('.presentation-measure:first-child .presentation-beat')).toHaveLength(3)
+    expect(wrapper.get('.presentation-sequence-heading h3').text()).toBe('Tagad: Plaukšķis')
+    expect(wrapper.findAll('.presentation-beat').length).toBeGreaterThan(3)
+    expect(wrapper.find('.presentation-beat-scroll').exists()).toBe(true)
+    expect(wrapper.get('.presentation-beat-current').attributes('data-beat')).toBe('0')
+    expect(wrapper.get('[data-beat="1"] .presentation-beat-label').text()).toBe('Pauze')
+    expect(wrapper.get('[data-beat="2"] .presentation-beat-label').text()).toBe('Plaukšķis')
+    expect(wrapper.findAll('.presentation-beat-measure-start')).toHaveLength(
+      wrapper.findAll('.presentation-beat').length / 3,
+    )
+    await wrapper.get('.presentation-settings > summary').trigger('click')
     await wrapper.get('[aria-label="Prezentācijas temps sitienos minūtē"]').setValue('110')
     expect(wrapper.get('[aria-label="Temps sitienos minūtē"]').element.value).toBe('110')
+    await wrapper.get('[aria-label="Prezentācijas temps sitienos minūtē"]').setValue('120')
 
     Object.defineProperty(audio, 'currentTime', {
       configurable: true,
@@ -164,8 +172,32 @@ describe('SoundGesturesView', () => {
       value: 0.8,
     })
     audio.dispatchEvent(new Event('timeupdate'))
+    await flushPromises()
+    expect(wrapper.get('.presentation-beat-current').attributes('data-beat')).toBe('1')
+    expect(wrapper.get('.presentation-sequence-heading h3').text()).toBe('Tagad: pauze')
+
+    Object.defineProperty(audio, 'currentTime', {
+      configurable: true,
+      writable: true,
+      value: 1,
+    })
+    audio.dispatchEvent(new Event('timeupdate'))
+    await flushPromises()
+    expect(wrapper.get('.presentation-beat-current').attributes('data-beat')).toBe('2')
+    expect(wrapper.get('.presentation-sequence-heading h3').text()).toBe('Tagad: Plaukšķis')
+
+    Object.defineProperty(audio, 'currentTime', {
+      configurable: true,
+      writable: true,
+      value: 1.8,
+    })
+    audio.dispatchEvent(new Event('timeupdate'))
+    await flushPromises()
     await wrapper.get('[aria-label="Atgriezties dziesmas sākumā"]').trigger('click')
     expect(audio.currentTime).toBe(0)
+    expect(wrapper.get('.presentation-beat-current').attributes('data-beat')).toBe('0')
+    await wrapper.get('[aria-label="Aizvērt prezentācijas režīmu"]').trigger('click')
+    expect(document.body.style.overflow).toBe('')
   })
 
   it('saves gesture cues and uploads a selected soundtrack as multipart data', async () => {

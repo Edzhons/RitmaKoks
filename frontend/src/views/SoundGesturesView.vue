@@ -13,9 +13,7 @@ import {
   formatTime,
   getCueTime,
   getBeatDuration,
-  getActiveCueIndex,
   getActiveCueId,
-  getNextCueIndex,
   GESTURES,
   MAX_SEQUENCE_SECONDS,
   normalizeGestureSequence,
@@ -36,7 +34,8 @@ const audioSource = ref('')
 const audioObjectUrl = ref('')
 const audioElement = ref(null)
 const fileInput = ref(null)
-const presentationGridScroll = ref(null)
+const presentationBeatScroll = ref(null)
+let playbackFrameId = 0
 const audioDuration = ref(0)
 const currentTime = ref(0)
 const isPlaying = ref(false)
@@ -48,6 +47,7 @@ const editorError = ref('')
 const resourceError = ref('')
 const audioError = ref('')
 const crud = useCrudResource('/api/rhythm-exercises')
+let bodyOverflowBeforePresentation = ''
 
 const savedExercises = crud.items
 const { saving, validationErrors } = crud
@@ -75,18 +75,9 @@ const isRhythmSettingsValid = computed(
 )
 const activeCue = computed(() => cues.value.find((cue) => cue.id === activeCueId.value) || null)
 const currentBeatIndex = computed(() =>
-  Math.max(
-    0,
-    Math.floor(
-      currentTime.value / getBeatDuration(sequence.value.tempo, sequence.value.timeSignature) + 0.5,
-    ),
+  Math.floor(
+    currentTime.value / getBeatDuration(sequence.value.tempo, sequence.value.timeSignature),
   ),
-)
-const activePresentationCueIndex = computed(() =>
-  getActiveCueIndex(cues.value, currentTime.value, cueLookaheadSeconds.value),
-)
-const nextPresentationCueIndex = computed(() =>
-  getNextCueIndex(cues.value, currentTime.value, cueLookaheadSeconds.value),
 )
 const presentationMeasures = computed(() =>
   isRhythmSettingsValid.value
@@ -98,31 +89,33 @@ const presentationMeasures = computed(() =>
       )
     : [],
 )
+const presentationBeats = computed(() =>
+  presentationMeasures.value.flatMap((measure) =>
+    measure.beats.map((beat) => ({ ...beat, measureNumber: measure.number })),
+  ),
+)
+const currentPresentationBeat = computed(
+  () =>
+    presentationBeats.value[Math.min(currentBeatIndex.value, presentationBeats.value.length - 1)] ||
+    null,
+)
+const currentPresentationGesture = computed(() =>
+  GESTURES.find((gesture) => gesture.id === currentPresentationBeat.value?.cues[0]?.gesture),
+)
 const currentGesture = computed(() =>
   GESTURES.find((gesture) => gesture.id === (activeCue.value?.gesture || selectedGesture.value)),
 )
 const hasAudio = computed(() => Boolean(audioSource.value))
 
 watch(
-  [activePresentationCueIndex, nextPresentationCueIndex, presentationMode],
+  [currentBeatIndex, presentationMode],
   async () => {
-    if (!presentationMode.value) return
-
-    const cueIndex =
-      nextPresentationCueIndex.value >= 0
-        ? nextPresentationCueIndex.value
-        : activePresentationCueIndex.value
-    if (cueIndex < 0) return
+    if (!presentationMode.value || !currentPresentationBeat.value) return
 
     await nextTick()
-    const measure = presentationMeasures.value.find((item) =>
-      item.beats.some((beat) => beat.cues.some((cue) => cue.cueIndex === cueIndex)),
-    )
-    if (!measure || !presentationGridScroll.value) return
-
-    presentationGridScroll.value
-      .querySelector(`[data-measure="${measure.number - 1}"]`)
-      ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+    presentationBeatScroll.value
+      ?.querySelector(`[data-beat="${currentPresentationBeat.value.beatIndex}"]`)
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'center', behavior: 'smooth' })
   },
   { flush: 'post' },
 )
@@ -269,8 +262,25 @@ function handleAudioTimeUpdate() {
   activeCueId.value = getActiveCueId(cues.value, currentTime.value, cueLookaheadSeconds.value)
 }
 
+function updatePlaybackPosition() {
+  handleAudioTimeUpdate()
+  if (isPlaying.value) {
+    playbackFrameId = requestAnimationFrame(updatePlaybackPosition)
+  }
+}
+
 function handleAudioPlayState(event) {
   isPlaying.value = event.type === 'play'
+  if (isPlaying.value) {
+    if (!playbackFrameId) playbackFrameId = requestAnimationFrame(updatePlaybackPosition)
+    return
+  }
+
+  if (playbackFrameId) {
+    cancelAnimationFrame(playbackFrameId)
+    playbackFrameId = 0
+  }
+  handleAudioTimeUpdate()
 }
 
 function recordGesture(gesture) {
@@ -436,14 +446,19 @@ function handleKeydown(event) {
 
 watch(presentationMode, (isOpen) => {
   if (isOpen) {
+    bodyOverflowBeforePresentation = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     window.addEventListener('keydown', handleKeydown)
   } else {
+    document.body.style.overflow = bodyOverflowBeforePresentation
     window.removeEventListener('keydown', handleKeydown)
   }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = bodyOverflowBeforePresentation
+  if (playbackFrameId) cancelAnimationFrame(playbackFrameId)
   releaseAudioObjectUrl()
 })
 </script>
@@ -808,104 +823,111 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
-      <div
-        class="presentation-rhythm-settings"
-        aria-label="Prezentācijas taktsmēra un tempa iestatījumi"
-      >
-        <label>
-          <span>Taktsmērs</span>
-          <span class="time-signature-inputs">
-            <select
-              v-model.number="sequence.timeSignature.numerator"
-              class="form-select"
-              aria-label="Prezentācijas taktsmēra skaitītājs"
-            >
-              <option v-for="value in TIME_SIGNATURE_NUMERATORS" :key="value" :value="value">
-                {{ value }}
-              </option>
-            </select>
-            <span aria-hidden="true">/</span>
-            <select
-              v-model.number="sequence.timeSignature.denominator"
-              class="form-select"
-              aria-label="Prezentācijas taktsmēra saucējs"
-            >
-              <option v-for="value in TIME_SIGNATURE_DENOMINATORS" :key="value" :value="value">
-                {{ value }}
-              </option>
-            </select>
+      <details class="presentation-settings">
+        <summary>
+          Ritma iestatījumi
+          <span>
+            {{ sequence.timeSignature.numerator }}/{{ sequence.timeSignature.denominator }} ·
+            {{ sequence.tempo }} sitieni/min
           </span>
-        </label>
-        <label>
-          <span>Temps (ceturtdaļas minūtē)</span>
-          <input
-            v-model.number="sequence.tempo"
-            class="form-control"
-            type="number"
-            min="30"
-            max="240"
-            step="1"
-            aria-label="Prezentācijas temps sitienos minūtē"
-          />
-        </label>
-        <p v-if="!isRhythmSettingsValid" class="rhythm-settings-error" role="alert">
-          Tempam jābūt no 30 līdz 240.
-        </p>
-      </div>
-      <section class="presentation-grid-panel" aria-label="Žestu taktis">
-        <div class="presentation-grid-heading">
-          <h3>Žestu taktis</h3>
-          <span
-            >{{ formatTime(currentTime) }} /
-            {{ audioDuration ? formatTime(audioDuration) : '—:—' }}</span
-          >
-        </div>
-        <div class="presentation-grid-legend" aria-label="Žestu atzīmes">
-          <span><i class="legend-current" aria-hidden="true"></i> Jau izpildīts / tagad</span>
-          <span><i class="legend-next" aria-hidden="true"></i> Nākamais</span>
-        </div>
-        <div ref="presentationGridScroll" class="presentation-grid-scroll">
-          <div
-            v-for="(measure, measureIndex) in presentationMeasures"
-            :key="measure.number"
-            class="presentation-measure"
-            :data-measure="measureIndex"
-          >
-            <strong class="presentation-measure-number">{{ measure.number }}</strong>
-            <div class="presentation-beats">
-              <div
-                v-for="beat in measure.beats"
-                :key="beat.number"
-                class="presentation-beat"
-                :class="{ 'presentation-beat-current': currentBeatIndex === beat.beatIndex }"
-                :aria-label="`Takts ${measure.number}, sitiens ${beat.number}`"
+        </summary>
+        <div
+          class="presentation-rhythm-settings"
+          aria-label="Prezentācijas taktsmēra un tempa iestatījumi"
+        >
+          <label>
+            <span>Taktsmērs</span>
+            <span class="time-signature-inputs">
+              <select
+                v-model.number="sequence.timeSignature.numerator"
+                class="form-select"
+                aria-label="Prezentācijas taktsmēra skaitītājs"
               >
-                <span class="presentation-beat-number">{{ beat.number }}</span>
-                <span v-if="!beat.cues.length" class="presentation-beat-empty">·</span>
-                <span
-                  v-for="cue in beat.cues"
-                  :key="cue.id"
-                  class="presentation-cue-cell"
-                  :class="{
-                    'presentation-cue-current': cue.cueIndex === activePresentationCueIndex,
-                    'presentation-cue-next': cue.cueIndex === nextPresentationCueIndex,
-                  }"
-                  :aria-label="`${cue.cueIndex === nextPresentationCueIndex ? 'Nākamais žests' : cue.cueIndex === activePresentationCueIndex ? 'Pašreizējais žests' : 'Žests'}, ${GESTURES.find((gesture) => gesture.id === cue.gesture)?.label}, ${formatTime(cue.at)}`"
-                  :title="`${GESTURES.find((gesture) => gesture.id === cue.gesture)?.label} · ${formatTime(cue.at)}`"
-                >
-                  <span
-                    v-if="cue.cueIndex === nextPresentationCueIndex"
-                    class="presentation-cue-badge"
-                  >
-                    NĀKAMAIS
-                  </span>
-                  <span class="presentation-cue-icon" aria-hidden="true">
-                    {{ GESTURES.find((gesture) => gesture.id === cue.gesture)?.icon }}
-                  </span>
-                  <span class="presentation-cue-time">{{ formatTime(cue.at) }}</span>
-                </span>
-              </div>
-            </div>
+                <option v-for="value in TIME_SIGNATURE_NUMERATORS" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
+              <span aria-hidden="true">/</span>
+              <select
+                v-model.number="sequence.timeSignature.denominator"
+                class="form-select"
+                aria-label="Prezentācijas taktsmēra saucējs"
+              >
+                <option v-for="value in TIME_SIGNATURE_DENOMINATORS" :key="value" :value="value">
+                  {{ value }}
+                </option>
+              </select>
+            </span>
+          </label>
+          <label>
+            <span>Temps (ceturtdaļas minūtē)</span>
+            <input
+              v-model.number="sequence.tempo"
+              class="form-control"
+              type="number"
+              min="30"
+              max="240"
+              step="1"
+              aria-label="Prezentācijas temps sitienos minūtē"
+            />
+          </label>
+          <p v-if="!isRhythmSettingsValid" class="rhythm-settings-error" role="alert">
+            Tempam jābūt no 30 līdz 240.
+          </p>
+        </div>
+      </details>
+      <section class="presentation-sequence-panel" aria-label="Sekojam ritmam">
+        <div class="presentation-sequence-heading">
+          <div>
+            <span class="presentation-eyebrow">SEKO DZIESMAI</span>
+            <h3 aria-live="polite" aria-atomic="true">
+              <template v-if="currentPresentationGesture">
+                Tagad: {{ currentPresentationGesture.label }}
+              </template>
+              <template v-else>Tagad: pauze</template>
+            </h3>
+            <p>
+              Takts {{ currentPresentationBeat?.measureNumber ?? '—' }} · sitiens
+              {{ currentPresentationBeat?.number ?? '—' }} no
+              {{ sequence.timeSignature.numerator }}
+            </p>
+          </div>
+          <span class="presentation-time">
+            {{ formatTime(currentTime) }} /
+            {{ audioDuration ? formatTime(audioDuration) : '—:—' }}
+          </span>
+        </div>
+        <div class="presentation-sequence-instruction">
+          Lielais izgaismotais lauciņš rāda pašreizējo sitienu. Pauzes lauciņā žests nav jāizpilda.
+        </div>
+        <div ref="presentationBeatScroll" class="presentation-beat-scroll">
+          <div
+            v-for="beat in presentationBeats"
+            :key="beat.beatIndex"
+            class="presentation-beat"
+            :class="{
+              'presentation-beat-current': beat.beatIndex === currentPresentationBeat?.beatIndex,
+              'presentation-beat-done': beat.beatIndex < currentPresentationBeat?.beatIndex,
+              'presentation-beat-measure-start': beat.number === 1,
+            }"
+            :data-beat="beat.beatIndex"
+            :aria-label="`Takts ${beat.measureNumber}, sitiens ${beat.number}${beat.cues.length ? `, ${GESTURES.find((gesture) => gesture.id === beat.cues[0].gesture)?.label}` : ', pauze'}`"
+          >
+            <span class="presentation-beat-heading">
+              <span v-if="beat.number === 1">Takts {{ beat.measureNumber }}</span>
+              <span>Sitiens {{ beat.number }}</span>
+            </span>
+            <span v-if="beat.cues.length" class="presentation-beat-gesture" aria-hidden="true">
+              {{ GESTURES.find((gesture) => gesture.id === beat.cues[0].gesture)?.icon }}
+            </span>
+            <span v-else class="presentation-beat-rest" aria-hidden="true">
+              <i class="bi bi-pause-fill"></i>
+            </span>
+            <strong class="presentation-beat-label">
+              {{
+                GESTURES.find((gesture) => gesture.id === beat.cues[0]?.gesture)?.label || 'Pauze'
+              }}
+            </strong>
           </div>
         </div>
       </section>
@@ -934,7 +956,7 @@ onBeforeUnmount(() => {
 .presentation-header,
 .presentation-actions,
 .presentation-footer,
-.presentation-grid-heading {
+.presentation-sequence-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1470,10 +1492,36 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid var(--rk-border);
 }
 
+.presentation-header > div:first-child {
+  min-width: 0;
+}
+
 .presentation-header h2 {
   margin: 0.25rem 0 0;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(1.3rem, 3vw, 2rem);
+}
+
+.presentation-settings {
+  align-self: flex-start;
+  border: 1px solid var(--rk-border);
+  border-radius: 0.75rem;
+  background: var(--rk-surface);
+}
+
+.presentation-settings > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.8rem;
+  color: var(--rk-muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.presentation-settings > summary span {
+  color: var(--rk-green-strong);
 }
 
 .presentation-rhythm-settings {
@@ -1481,10 +1529,7 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: end;
   gap: 0.75rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--rk-border);
-  border-radius: 0.85rem;
-  background: var(--rk-surface);
+  padding: 0 0.8rem 0.8rem;
 }
 
 .presentation-rhythm-settings > label {
@@ -1512,8 +1557,13 @@ onBeforeUnmount(() => {
 }
 
 .presentation-actions {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
+}
+
+.presentation-actions > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .presentation-close {
@@ -1528,176 +1578,151 @@ onBeforeUnmount(() => {
   background: var(--rk-surface);
 }
 
-.presentation-grid-panel {
+.presentation-sequence-panel {
   display: grid;
+  flex: 0 0 auto;
   min-height: 0;
-  gap: 0.6rem;
-  padding: 0.8rem;
+  gap: 0.85rem;
+  padding: clamp(0.8rem, 2vw, 1.4rem);
   border: 1px solid var(--rk-border);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   background: var(--rk-surface);
 }
 
-.presentation-grid-heading h3 {
-  margin: 0;
-  font-size: 0.88rem;
+.presentation-sequence-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.presentation-eyebrow {
+  color: var(--rk-green-strong);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.presentation-sequence-heading h3 {
+  margin: 0.15rem 0 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
   font-weight: 900;
 }
 
-.presentation-grid-heading > span {
+.presentation-sequence-heading p {
+  margin: 0.2rem 0 0;
   color: var(--rk-muted);
-  font-size: 0.73rem;
+  font-size: 0.85rem;
+}
+
+.presentation-time {
+  flex: 0 0 auto;
+  color: var(--rk-muted);
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
   font-variant-numeric: tabular-nums;
 }
 
-.presentation-grid-legend {
+.presentation-sequence-instruction {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.7rem;
+  color: var(--rk-muted);
+  background: var(--rk-bg);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.presentation-beat-scroll {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  color: var(--rk-muted);
-  font-size: 0.65rem;
-}
-
-.presentation-grid-legend > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.presentation-grid-legend i {
-  display: inline-block;
-  width: 0.65rem;
-  height: 0.65rem;
-  border-radius: 0.18rem;
-}
-
-.legend-current {
-  background: var(--rk-amber);
-}
-
-.legend-next {
-  outline: 2px solid var(--rk-green);
-  background: var(--rk-green-soft);
-}
-
-.presentation-grid-scroll {
-  display: grid;
-  max-height: min(32vh, 260px);
-  gap: 0.45rem;
-  overflow: auto;
-  padding: 0.1rem;
-}
-
-.presentation-measure {
-  display: grid;
-  min-width: max-content;
-  grid-template-columns: 2.2rem minmax(0, 1fr);
+  width: 100%;
+  height: clamp(220px, 34vh, 300px);
   align-items: stretch;
-  gap: 0.45rem;
-}
-
-.presentation-measure-number {
-  display: grid;
-  place-items: center;
-  border-right: 2px solid var(--rk-amber);
-  color: var(--rk-muted);
-  font-size: 0.78rem;
-}
-
-.presentation-beats {
-  display: grid;
-  grid-auto-columns: minmax(92px, 1fr);
-  grid-auto-flow: column;
-  gap: 0.35rem;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.7rem 0.35rem 1rem;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  scrollbar-color: var(--rk-green) var(--rk-bg);
 }
 
 .presentation-beat {
-  position: relative;
-  display: flex;
-  min-height: 84px;
-  min-width: 92px;
-  flex-direction: column;
+  display: grid;
+  width: clamp(150px, 16vw, 220px);
+  height: 100%;
+  min-height: 0;
+  flex: 0 0 auto;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.35rem;
-  border: 1px solid var(--rk-border);
-  border-radius: 0.65rem;
+  gap: 0.55rem;
+  padding: 0.9rem 0.65rem;
+  border: 2px solid var(--rk-border);
+  border-radius: 1rem;
+  color: var(--rk-text);
   background: var(--rk-bg);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+.presentation-beat-measure-start:not(:first-child) {
+  margin-left: 0.7rem;
+  border-left: 6px solid var(--rk-green);
 }
 
 .presentation-beat-current {
+  transform: scale(1.025);
   border-color: var(--rk-amber);
-  box-shadow: inset 0 0 0 1px var(--rk-amber);
-}
-
-.presentation-beat-number {
-  align-self: flex-start;
-  color: var(--rk-muted);
-  font-size: 0.65rem;
-  font-weight: 800;
-}
-
-.presentation-beat-empty {
-  color: var(--rk-border);
-  font-size: 1.2rem;
-}
-
-.presentation-cue-cell {
-  position: relative;
-  display: grid;
-  width: 100%;
-  justify-items: center;
-  gap: 0.08rem;
-  padding: 0.18rem 0.1rem;
-  border: 1px solid transparent;
-  border-radius: 0.45rem;
-  background: var(--rk-surface);
-  transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.presentation-cue-current {
-  opacity: 0.62;
-  background: var(--rk-surface-soft);
-}
-
-.presentation-cue-next {
-  border-color: var(--rk-green);
-  background: var(--rk-green-soft);
+  color: #24311f;
+  background: var(--rk-amber);
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--rk-green) 35%, transparent),
-    0 0 16px color-mix(in srgb, var(--rk-green) 40%, transparent);
-  opacity: 1;
-  animation: next-cue-pulse 1.2s ease-in-out infinite alternate;
+    0 0 0 4px color-mix(in srgb, var(--rk-amber) 36%, transparent),
+    0 0.8rem 2rem color-mix(in srgb, var(--rk-amber) 25%, transparent);
 }
 
-.presentation-cue-badge {
-  color: var(--rk-green-strong);
-  font-size: 0.52rem;
-  font-weight: 1000;
-  letter-spacing: 0.06em;
+.presentation-beat-done:not(.presentation-beat-current) {
+  opacity: 0.5;
 }
 
-.presentation-cue-icon {
-  font-size: 1.55rem;
-  line-height: 1.15;
-}
-
-.presentation-cue-time {
+.presentation-beat-heading {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 0.4rem;
   color: var(--rk-muted);
-  font-size: 0.61rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  font-weight: 900;
 }
 
-@keyframes next-cue-pulse {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.05);
-  }
+.presentation-beat-gesture,
+.presentation-beat-rest {
+  display: grid;
+  align-self: center;
+  justify-items: center;
+  font-size: clamp(5rem, 10vw, 8.5rem);
+  line-height: 1;
+}
+
+.presentation-beat-rest {
+  color: color-mix(in srgb, var(--rk-muted) 55%, transparent);
+}
+
+.presentation-beat-label {
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  text-align: center;
+}
+
+.presentation-beat-current .presentation-beat-heading {
+  color: #24311f;
+}
+
+.presentation-beat-current .presentation-beat-rest {
+  color: #24311f;
 }
 
 .presentation-footer {
@@ -1763,10 +1788,14 @@ onBeforeUnmount(() => {
 
   .presentation-header {
     align-items: flex-start;
+    flex-direction: column;
   }
 
   .presentation-actions {
+    width: 100%;
     gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 
   .presentation-actions .btn {
@@ -1774,17 +1803,21 @@ onBeforeUnmount(() => {
     font-size: 0.78rem;
   }
 
-  .presentation-grid-panel {
-    padding: 0.55rem;
+  .presentation-sequence-heading {
+    align-items: flex-start;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .gesture-button,
   .current-gesture-card,
-  .presentation-cue-next {
+  .presentation-beat {
     transition: none;
     animation: none;
+  }
+
+  .presentation-beat-scroll {
+    scroll-behavior: auto;
   }
 }
 </style>

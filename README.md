@@ -7,7 +7,7 @@ RitmaKoks is a Latvian-language music education platform for schools, teachers, 
 - `backend/` — Laravel REST API
 - `frontend/` — Vue 3 single-page application with Bootstrap 5 and custom responsive styles
 
-The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The responsive, theme-aware frontend includes Skanošie žesti, where a teacher can upload a song, record gesture cues while it plays, set the tempo and time signature, and present the next gesture in a measure-by-measure grid. Krāsainās notis and the instrument activity are separate planned areas.
+The initial database design is documented in [backend/database/README.md](./backend/database/README.md). The responsive, theme-aware frontend includes Skanošie žesti, where a teacher can upload a song, record beat-based gesture cues, set the tempo and time signature, and present them in a large left-to-right sequence. The current beat is highlighted; empty beats are shown as pauses. Krāsainās notis and the instrument activity are separate planned areas.
 
 ## Development roadmap
 
